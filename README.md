@@ -44,6 +44,19 @@ O tutorial visual e as regras estão em **Como jogar** e em [docs/tutorial.md](d
 
 Com um número de bot conectado, o WhatsApp é só o **menu**: a pessoa escolhe o jogo, a dificuldade e convida amigos (link `wa.me`, favoritos). Quem entra vira contato autorizado e todos recebem um **link pessoal** para jogar **na web**; a partida começa quando a mesa enche. Defina `WEB_BASE_URL` (ou `PUBLIC_ORIGIN`) com um endereço que o celular alcance. O canal é opcional e fica desligado sem as variáveis `WPP_URL`, `WPP_SECRET_KEY` e `WHATSAPP_WEBHOOK_SECRET`. Configuração, conexão do número e riscos (o WPPConnect não é oficial): [docs/whatsapp.md](docs/whatsapp.md).
 
+## Responsividade e regras de mesa
+
+Todas as telas foram desenhadas para funcionar de 320 px a monitores largos, em pé ou deitado. O teste `src/tests/browser/responsive.spec.mjs` percorre sete tamanhos de tela (de 320 px a 1920 px) e falha se a página rolar para o lado ou se a mesa sair da tela.
+
+- **Mesa grande.** A mesa ocupa o espaço que sobra na tela. No Truco, em celular deitado, tablet deitado, notebook e monitor, a mesa fica à esquerda e as cartas num painel à direita. No dominó, a mesa cresce com a altura da tela, as peças quebram em várias fileiras e o cabeçalho e a mão ficam compactos no celular.
+- **Regra da cruz.** Em todo jogo de mesa com vários jogadores, quem vê a tela fica embaixo e os outros ficam à esquerda, no topo e à direita, com a vez seguindo o sentido horário (padrão ocidental). Parceiros do Truco ficam frente a frente. Detalhes no `AGENTS.md`.
+- **Jogador da vez.** O círculo do jogador da vez cresce, fica amarelo e mostra os segundos restantes. O relógio da jogada aparece para todos da mesa.
+- **Truco mais humano.** Cada pedido de aumento mostra um letreiro grande (TRUCO, SEIS, NOVE ou DOZE). O bot hesita mais para responder a um pedido, com um balão de dúvida e uma pausa maior. O bot que joga na mesma equipe de uma pessoa é medroso: não pede truco por conta própria, não devolve aumento e às vezes corre com mão fraca, para a pessoa ser a protagonista.
+- **Palavras cruzadas.** A grade é o campo de digitação: toque num quadrado e digite. Letras que cruzam outra palavra valem para as duas, então uma palavra fácil descoberta ajuda a resolver as difíceis. Antes de conferir, qualquer letra pode ser apagada ou trocada; Enter (ou o botão) confere a palavra. As dicas ficam numa lista de horizontais e verticais.
+- **Caça-palavras.** A grade quadrada fica em cima e, embaixo, a lista de palavras: as que faltam no começo e as encontradas no fim.
+- **Uma mesa por pessoa.** Criar ou entrar em uma mesa encerra as outras abertas da pessoa. Se ainda há outras pessoas jogando, ela só sai, um bot assume o lugar e o placar dela é zerado. Ao subir o servidor e a cada minuto, mesas acumuladas são limpas.
+- **Um link por pessoa no WhatsApp.** Cada pessoa tem um único link da web ativo, enviado em uma só mensagem; gerar outro invalida o anterior, e envios automáticos repetidos em 30 segundos não geram um novo link.
+
 ## Comandos e validação
 
 | Comando                | Finalidade                                                 |
