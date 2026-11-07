@@ -105,6 +105,14 @@ export function turnSign(key, active) {
   return '<div class="turn-sign" aria-hidden="true"><svg viewBox="0 0 320 120"><text x="160" y="88" text-anchor="middle" class="turn-sign-shadow">SUA VEZ</text><text x="160" y="88" text-anchor="middle" class="turn-sign-text">SUA VEZ</text></svg></div>';
 }
 
+// Letreiro grande do pedido de aumento (TRUCO, SEIS, NOVE, DOZE), uma vez por pedido.
+let callShown = '';
+export function callSign(key, text) {
+  if (!text || callShown === key) return '';
+  callShown = key;
+  return `<div class="turn-sign call-sign" aria-hidden="true"><svg viewBox="0 0 320 120"><text x="160" y="88" text-anchor="middle" class="turn-sign-shadow">${escapeHtml(text)}</text><text x="160" y="88" text-anchor="middle" class="turn-sign-text">${escapeHtml(text)}</text></svg></div>`;
+}
+
 // Menu de três risquinhos, igual em todos os jogos: tudo fora da mesa fica aqui.
 const MENU_ICON =
   '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>';

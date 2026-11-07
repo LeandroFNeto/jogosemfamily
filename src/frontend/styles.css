@@ -3777,3 +3777,56 @@ body:has(.game-screen) #notice:not([hidden]) {
   grid-template-areas: 'top' 'bottom';
   grid-template-columns: minmax(0, 1fr);
 }
+
+/* Pedido de aumento (TRUCO, SEIS, NOVE, DOZE) em letras enormes e vermelhas */
+.call-sign {
+  width: min(96vw, 28rem);
+  z-index: 85;
+  animation-duration: 2.6s;
+}
+.call-sign .turn-sign-text {
+  fill: #ff5a45;
+}
+.call-sign .turn-sign-shadow {
+  fill: #1c0b0b;
+  stroke: #1c0b0b;
+}
+/* Bot em dúvida: balão pensando perto do avatar, com um leve balanço */
+.truco-seat .doubt {
+  position: absolute;
+  top: -1.6rem;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  background: #fffefa;
+  color: #233c34;
+  font-size: 0.8rem;
+  font-weight: 700;
+  white-space: nowrap;
+  box-shadow: 0 0.2rem 0.5rem #0006;
+  z-index: 4;
+  animation: doubt-sway 1.2s ease-in-out infinite;
+}
+.truco-seat.doubting .avatar {
+  animation: doubt-tilt 1.2s ease-in-out infinite;
+}
+@keyframes doubt-sway {
+  50% {
+    transform: translateX(-50%) translateY(-0.2rem);
+  }
+}
+@keyframes doubt-tilt {
+  25% {
+    transform: rotate(-6deg);
+  }
+  75% {
+    transform: rotate(6deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .truco-seat .doubt,
+  .truco-seat.doubting .avatar {
+    animation: none;
+  }
+}

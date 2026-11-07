@@ -4,6 +4,7 @@ import {
   botTag,
   showHelp,
   turnSign,
+  callSign,
   menuButton,
   gameSheet,
   screenBar,
@@ -169,7 +170,16 @@ function puzzleMarkup(game, enabled) {
 // arrastar até o centro (ou "Jogar esta carta") a lança.
 const TRUCO_STAKES = [1, 3, 6, 9, 12];
 
-function trucoMarkup(game, meId, connected, players, status, enabled, key) {
+function trucoMarkup(
+  game,
+  meId,
+  connected,
+  players,
+  status,
+  enabled,
+  key,
+  thinking
+) {
   const myTeam = game.playerIds.indexOf(meId) % 2;
   const responder =
     game.phase === 'eleven'
@@ -204,7 +214,8 @@ function trucoMarkup(game, meId, connected, players, status, enabled, key) {
     if (!player) return '';
     const turn =
       game.currentPlayerId === player.id && game.status === 'PLAYING';
-    return `<div class="player-card truco-seat seat-${place}${turn ? ' active-player' : ''}">${avatar(player)}<span class="seat-time" aria-hidden="true"></span><strong>${e(player.name)}${botTag(player)}</strong></div>`;
+    const doubt = thinking?.doubt && thinking.playerId === player.id;
+    return `<div class="player-card truco-seat seat-${place}${turn ? ' active-player' : ''}${doubt ? ' doubting' : ''}">${doubt ? '<span class="doubt" aria-hidden="true">🤔 hmm…</span>' : ''}${avatar(player)}<span class="seat-time" aria-hidden="true"></span><strong>${e(player.name)}${botTag(player)}</strong></div>`;
   };
   const meSeat = players.find((item) => item.id === meId);
   const myTurnNow = game.currentPlayerId === meId && game.status === 'PLAYING';
@@ -263,6 +274,7 @@ function trucoMarkup(game, meId, connected, players, status, enabled, key) {
         <div class="player-card truco-seat seat-me${myTurnNow ? ' active-player' : ''}">${avatar(meSeat)}<span class="seat-time" aria-hidden="true"></span><strong>${e(meSeat?.name)}${myTurnNow ? ' · sua vez' : ''}</strong></div>
         ${overlay}
         ${turnSign(key, enabled && game.status === 'PLAYING')}
+        ${callSign(`${game.handNumber}:${game.pendingRaise?.value}:${game.pendingRaise?.requesterId}`, game.pendingRaise ? { 3: 'TRUCO!', 6: 'SEIS!', 9: 'NOVE!', 12: 'DOZE!' }[game.pendingRaise.value] : '')}
       </section>
     </div>
     <footer class="truco-dock">
@@ -542,7 +554,8 @@ export function renderAdditionalGame(context) {
           players,
           status,
           enabled,
-          `${room.id}:${room.revision}`
+          `${room.id}:${room.revision}`,
+          room.thinking
         )
       : `<section class="game-page game-screen game-${room.gameId}">${screenBar({ title: e(metadata.name) })}${gameSheet({ connected, readId: 'read-game', readLabel: 'Ler instruções em voz alta', info: `<strong>${e(metadata.name)}</strong> · ${room.mode === 'bot' ? 'Contra bots' : 'Sem pressa'}` })}
     <section class="players additional-players cross-seats" data-seats="${players.length}" aria-label="Participantes" ${room.gameId === 'cards' ? 'hidden' : ''}>${crossOrder(

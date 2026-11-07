@@ -250,6 +250,26 @@ export function createRoomsService({
     return id && botSeat(room, id) ? id : null;
   };
 
+  // No Truco o bot que joga com uma pessoa na mesma equipe é o parceiro dela.
+  const hasHumanPartner = (room, id) => {
+    if (room.gameId !== 'cards') return false;
+    const ids = room.game.playerIds;
+    const team = ids.indexOf(id) % 2;
+    return ids.some(
+      (other) =>
+        other !== id &&
+        ids.indexOf(other) % 2 === team &&
+        !room.botIds.includes(other)
+    );
+  };
+
+  // Responder a truco/seis/nove/doze é uma decisão difícil: o bot hesita mais.
+  const isDeciding = (room) =>
+    room.gameId === 'cards' &&
+    Boolean(room.game.decisionPlayerId || room.game.pendingRaise);
+  const botPause = (room) =>
+    isDeciding(room) ? Math.round(botDelayMs * 2.5) : botDelayMs;
+
   // Uma jogada de bot; devolve false quando não há o que jogar.
   function playBot(room, engine) {
     const id = botActor(room);
@@ -258,7 +278,8 @@ export function createRoomsService({
       room.gameId,
       room.game,
       id,
-      room.difficulty ?? 'medium'
+      room.difficulty ?? 'medium',
+      { timidPartner: hasHumanPartner(room, id) }
     );
     if (!action) return false;
     room.game = engine.processAction(room.game, id, action);
@@ -275,7 +296,9 @@ export function createRoomsService({
     if (!presentHumans(room).length) return;
     const engine = getGameEngine(room.gameId);
     if (botDelayMs > 0) {
-      room.botAt = botActor(room) ? (room.botAt ?? now() + botDelayMs) : null;
+      room.botAt = botActor(room)
+        ? (room.botAt ?? now() + botPause(room))
+        : null;
       room.status = room.game.status;
       return;
     }
@@ -331,6 +354,10 @@ export function createRoomsService({
       botSeats: room.botSeats,
       closedReason: room.closedReason ?? null,
       turn: room.turn ?? null,
+      thinking:
+        room.game?.status === 'PLAYING' && room.botAt && botActor(room)
+          ? { playerId: botActor(room), doubt: isDeciding(room) }
+          : null,
       turnSeconds: room.turnSeconds,
       notice: room.notice ?? null,
       serverNow: now(),

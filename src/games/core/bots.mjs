@@ -1,5 +1,6 @@
 import { crosswords } from '../crossword/puzzles.mjs';
 import { pick, systemRng } from './rng.mjs';
+import { cardStrength } from '../cards/engine.mjs';
 import {
   dominoView,
   easyDomino,
@@ -32,6 +33,32 @@ const LEVELS = ['easy', 'medium', 'hard'];
  *  - difícil: simulações com as cartas ou peças que ainda podem estar ocultas.
  * `options.rng` torna o resultado repetível nos testes.
  */
+/**
+ * Parceiro medroso: não pede truco por conta própria, não devolve aumento e,
+ * quando aceitaria com mão fraca, às vezes tem medo e corre.
+ */
+export function timidCards(view, action, decide, rng) {
+  if (!action) return action;
+  if (action.type === 'raise') {
+    if (view.pendingRaise) return { type: 'accept' };
+    const team = view.playerIds.indexOf(view.playerId) % 2;
+    // Sem poder pedir aumento, o bot escolhe outra coisa (jogar uma carta).
+    return decide({ ...view, raiseAllowedTeam: 1 - team });
+  }
+  if (
+    action.type === 'accept' &&
+    view.pendingRaise &&
+    view.phase !== 'eleven'
+  ) {
+    const strongest = Math.max(
+      0,
+      ...view.hand.map((card) => cardStrength(card, view.vira))
+    );
+    if (strongest < 14 && rng.int(100) < 40) return { type: 'fold' };
+  }
+  return action;
+}
+
 export function chooseBotAction(
   gameId,
   game,
@@ -42,6 +69,8 @@ export function chooseBotAction(
     now = () => performance.now(),
     budgetMs = HARD_BUDGET_MS,
     samples = HARD_SAMPLES,
+    // Parceiro de uma pessoa no Truco: medroso, para a pessoa ser a protagonista.
+    timidPartner = false,
   } = {}
 ) {
   if (game.status !== 'PLAYING') return null;
@@ -54,7 +83,10 @@ export function chooseBotAction(
   if (gameId === 'cards') {
     if (game.phase === 'between') return null;
     const view = cardsView(game, playerId);
-    return [easyCards, mediumCards, hardCards][level](view, context);
+    const decide = (v) =>
+      [easyCards, mediumCards, hardCards][level](v, context);
+    const action = decide(view);
+    return timidPartner ? timidCards(view, action, decide, rng) : action;
   }
   if (gameId === 'cacheta') {
     const view = cachetaView(game, playerId);
