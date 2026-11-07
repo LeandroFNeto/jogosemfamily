@@ -121,13 +121,16 @@ test('dono retira jogador: lugar vira bot, retirado não reentra e entra em outr
     /retirou você/
   );
   assert.equal(rooms.listActive(beto.id).length, 0);
-  // Outra mesa do mesmo dono continua aberta para Beto.
+  // Uma mesa por vez: a nova mesa de Ana encerra a antiga e fica aberta para Beto.
   const other = rooms.createRoom(ana, { gameId: 'domino', mode: 'online' });
   const { code } = issueWhatsappInvitation(store, other, clock.time);
   assert.equal(rooms.joinByCode(beto, code).already, false);
   // E o convite da mesa antiga continua recusado.
   const { code: oldCode } = issueWhatsappInvitation(store, current, clock.time);
-  assert.throws(() => rooms.joinByCode(beto, oldCode), /retirou você/);
+  assert.throws(
+    () => rooms.joinByCode(beto, oldCode),
+    /retirou você|encerrada|inválido/
+  );
 });
 
 test('dono que sai passa a posse a um humano sorteado; só o dono encerra', () => {
@@ -177,4 +180,22 @@ test('dono sai e só restam bots: a mesa espera e a inatividade cancela', () => 
   ctx.advance(5 * 60000 + 1000);
   const [closed] = ctx.rooms.sweep();
   assert.equal(closed.closedReason, 'inactive');
+});
+
+test('uma pessoa joga uma mesa por vez: criar outra encerra a antiga', () => {
+  const ctx = setup({});
+  const ana = ctx.person('Ana');
+  const first = ctx.rooms.createRoom(ana, { gameId: 'cards', mode: 'bot' });
+  const second = ctx.rooms.createRoom(ana, { gameId: 'domino', mode: 'bot' });
+  const rooms = ctx.rooms.listActive(ana.id);
+  assert.deepEqual(
+    rooms.map((room) => room.id),
+    [second.id]
+  );
+  const old = ctx.rooms.normalizeRoom(ctx.store.getRoom(first.id));
+  assert.equal(old.status, 'CLOSED');
+  assert.equal(old.closedReason, 'replaced');
+  for (let i = 0; i < 5; i++)
+    ctx.rooms.createRoom(ana, { gameId: 'cards', mode: 'bot' });
+  assert.equal(ctx.rooms.listActive(ana.id).length, 1);
 });

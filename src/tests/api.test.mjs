@@ -300,26 +300,25 @@ test('aprovações simultâneas preservam os dois contatos e convites direcionad
   const { owner, guest, guestProfile, id, token } = await createPair(app);
   const other = app.client();
   const otherProfile = await other.profile('Carlos');
+  await guest.request(`/invitations/${token}/join`, 'POST', {});
+  await owner.request(`/rooms/${id}/approve`, 'POST', {
+    playerId: guestProfile.id,
+  });
+  // Uma mesa por vez: a segunda mesa do dono encerra a primeira (ou o dono sai dela).
   const second = await owner.request(
     '/rooms',
     'POST',
     { gameId: 'domino' },
     201
   );
-  await guest.request(`/invitations/${token}/join`, 'POST', {});
   await other.request(
     `/invitations/${second.invitation.token}/join`,
     'POST',
     {}
   );
-  await Promise.all([
-    owner.request(`/rooms/${id}/approve`, 'POST', {
-      playerId: guestProfile.id,
-    }),
-    owner.request(`/rooms/${second.room.id}/approve`, 'POST', {
-      playerId: otherProfile.id,
-    }),
-  ]);
+  await owner.request(`/rooms/${second.room.id}/approve`, 'POST', {
+    playerId: otherProfile.id,
+  });
   assert.equal((await owner.request('/me')).contacts.length, 2);
   const third = await owner.request(
     '/rooms',

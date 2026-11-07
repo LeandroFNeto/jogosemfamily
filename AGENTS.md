@@ -31,3 +31,7 @@ Nunca envie notificação automática do jogo pelo WhatsApp (início, vez, tempo
 ## Regra da cruz (jogos de mesa)
 
 Em todo jogo multiplayer com mesa (dominó, Truco, cacheta e os demais), os lugares seguem o padrão ocidental: quem vê a tela fica embaixo e os outros ficam em cruz, no **sentido horário**: o próximo da vez é o da esquerda, depois o do topo, depois o da direita. Com 4 jogadores usam-se os quatro pontos (parceiros do Truco ficam frente a frente); com 3, esquerda e direita; com 2, topo. A ordem dos `playerIds` no motor é a ordem da vez, então o lugar na tela sai de `(índice − meu índice) % total`. Veja `CROSS_PLACES`/`crossOrder` em `games-ui.mjs`, `SEAT_POSITIONS` em `app.mjs` e `placeOf` no Truco. Qualquer mudança de jogabilidade, posição de jogador ou ordem de vez deve manter essa regra. O jogador da vez cresce, fica em amarelo e mostra os segundos.
+
+## Uma mesa por pessoa
+
+Cada pessoa joga uma mesa por vez. Criar ou entrar em uma mesa encerra as outras abertas dela (`retireOtherRooms` em `rooms-service.mjs`; se ainda há outras pessoas jogando, ela só sai e um bot assume). Ao subir o servidor e a cada minuto, `consolidate()` limpa mesas acumuladas. Isso evita sessões velhas, avisos repetidos e conversas do WhatsApp presas a mesas antigas.

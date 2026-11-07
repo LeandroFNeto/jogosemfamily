@@ -782,7 +782,9 @@ function renderRoom() {
     setContent(
       room.closedReason === 'inactive'
         ? '<section class="centered card"><h1>Essa partida foi cancelada por falta de jogadores.</h1><p>Ninguém ficou na mesa por 5 minutos. Para jogar de novo, crie uma nova partida.</p><a class="button primary" href="/">Criar outra partida</a></section>'
-        : '<section class="centered card"><h1>A mesa foi encerrada.</h1><p>Obrigado pela companhia. Vocês podem jogar juntos outra vez.</p><a class="button primary" href="/">Voltar ao início</a></section>'
+        : room.closedReason === 'replaced'
+          ? '<section class="centered card"><h1>Você começou outra partida.</h1><p>Cada pessoa joga uma mesa por vez, então esta foi encerrada.</p><a class="button primary" href="/">Voltar ao início</a></section>'
+          : '<section class="centered card"><h1>A mesa foi encerrada.</h1><p>Obrigado pela companhia. Vocês podem jogar juntos outra vez.</p><a class="button primary" href="/">Voltar ao início</a></section>'
     );
   } else if (room.game && room.approved) {
     if (room.gameId === 'domino') renderPlaying();

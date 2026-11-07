@@ -495,6 +495,22 @@ export function createRoomsService({
     fillWithBots(room, 'owner');
   }
 
+  /**
+   * Uma pessoa, uma mesa por vez. Encerra (ou deixa, se há outras pessoas
+   * jogando) toda mesa aberta dela que não seja a atual, para não acumular
+   * sessões velhas nem mensagens repetidas.
+   */
+  function retireOtherRooms(profileId, keepId) {
+    for (const old of listActive(profileId)) {
+      if (old.id === keepId) continue;
+      const others = presentHumans(old).filter((id) => id !== profileId);
+      if (old.ownerId === profileId && !others.length)
+        closeRoom(old, 'replaced');
+      else leave(old, { id: profileId });
+      save(old);
+    }
+  }
+
   function createRoom(profile, body) {
     const me = profileOf(profile.id);
     requireValue(
@@ -582,15 +598,8 @@ export function createRoomsService({
       body.turnSeconds === undefined || TURN_OPTIONS.includes(body.turnSeconds),
       'Escolha o tempo da vez: desligado, 30, 60 ou 90 segundos.'
     );
-    const count = store.db
-      .prepare(
-        "SELECT count(*) AS n FROM rooms WHERE expires > ? AND json_extract(data, '$.ownerId') = ? AND json_extract(data, '$.status') != 'CLOSED'"
-      )
-      .get(now(), me.id).n;
-    requireValue(
-      count < 10,
-      'Você já tem dez mesas abertas. Encerre uma para criar outra.'
-    );
+    // Uma pessoa joga uma mesa por vez: as mesas antigas dela são encerradas.
+    retireOtherRooms(me.id, null);
     // Quebra-cabeça: o nível define a grade e a imagem (escolhida, sorteada ou a foto).
     let puzzleOptions = {};
     if (body.gameId === 'puzzle') {
@@ -955,6 +964,7 @@ export function createRoomsService({
       'Esta mesa já está completa.',
       409
     );
+    retireOtherRooms(me.id, room.id);
     const owner = profileOf(room.ownerId);
     startRoom(room, me);
     if (!owner.contacts.includes(me.id)) {
@@ -980,6 +990,33 @@ export function createRoomsService({
       .filter((room) => stateOf(room, profileId) !== 'removed');
   }
 
+  /** Limpa mesas acumuladas: cada pessoa fica só com a mesa mais recente. */
+  function consolidate() {
+    const newest = new Map();
+    const all = store.db
+      .prepare(
+        "SELECT data FROM rooms WHERE expires > ? AND json_extract(data, '$.status') != 'CLOSED'"
+      )
+      .all(now())
+      .map((row) => normalizeRoom(JSON.parse(row.data)));
+    for (const room of all)
+      for (const id of room.playerIds) {
+        if (room.botIds.includes(id) || stateOf(room, id) === 'removed')
+          continue;
+        const best = newest.get(id);
+        if (!best || room.expires > best.expires) newest.set(id, room);
+      }
+    let retired = 0;
+    for (const [id, keep] of newest) {
+      const before = listActive(id).length;
+      if (before > 1) {
+        retireOtherRooms(id, keep.id);
+        retired += before - 1;
+      }
+    }
+    return retired;
+  }
+
   return {
     images,
     favorites,
@@ -1002,6 +1039,7 @@ export function createRoomsService({
     perform,
     joinByCode,
     listActive,
+    consolidate,
     sweep,
     touch(roomId, playerId) {
       seenAt.set(`${roomId}:${playerId}`, now());

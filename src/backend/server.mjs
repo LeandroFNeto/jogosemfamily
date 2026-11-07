@@ -787,8 +787,19 @@ export function createApplication({
       );
     }
   });
+  try {
+    const retired = rooms.consolidate();
+    if (retired) console.log(`Mesas antigas encerradas: ${retired}`);
+  } catch (error) {
+    console.error('Falha ao limpar mesas antigas:', error.message);
+  }
   const cleanup = setInterval(() => {
     store.cleanup(now());
+    try {
+      rooms.consolidate();
+    } catch (error) {
+      console.error('Falha ao limpar mesas antigas:', error.message);
+    }
     for (const [key, value] of limits)
       if (now() - value.since > 60000) limits.delete(key);
   }, 60000);
