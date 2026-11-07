@@ -35,6 +35,7 @@ test('palavras cruzadas, quebra-cabeça e caça-palavras não oferecem bot', asy
   await page.goto('/');
   await page.getByLabel('Seu nome').fill('Lia');
   await page.getByRole('button', { name: 'Vamos jogar' }).click();
+  await expect(page.getByRole('heading', { name: /Olá, Lia/ })).toBeVisible();
   for (const game of ['crossword', 'puzzle', 'wordsearch']) {
     const options = await page
       .locator(`[data-create-game="${game}"] [name="mode"] option`)
