@@ -3979,31 +3979,54 @@ body:has(.game-screen) #notice:not([hidden]) {
   outline: 3px solid var(--focus);
   background: #ffe9a8;
 }
-@media (max-width: 700px) {
-  /* Celular: pista e casas das letras logo no alto, a grade depois */
-  .crossword-layout {
-    display: flex;
-    flex-direction: column;
-    gap: 0.6rem;
-  }
-  .crossword-layout > div {
-    display: contents;
-  }
-  .crossword-layout .cw-active {
-    order: 1;
-    margin: 0;
-  }
-  .crossword-layout .clue-card {
-    order: 2;
-  }
-  .crossword-layout h2 {
-    order: 3;
-    margin: 0;
-  }
-  .crossword-layout .crossword-grid {
-    order: 4;
-  }
-  .crossword-layout .fine {
-    order: 5;
-  }
+
+/* Palavras cruzadas: digitação direto na grade e lista de dicas */
+.cw-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  font-size: 16px;
+  pointer-events: none;
+}
+.crossword-cell.solved {
+  background: #d7efc7;
+  cursor: default;
+}
+.cw-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0.7rem 0 0.3rem;
+}
+.cw-clues {
+  list-style: none;
+  margin: 0 0 0.8rem;
+  padding: 0;
+  display: grid;
+  gap: 0.35rem;
+}
+.cw-clue {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  width: 100%;
+  min-height: 2.75rem;
+  padding: 0.45rem 0.6rem;
+  text-align: left;
+  font: inherit;
+  color: var(--ink);
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 0.6rem;
+}
+.cw-clue.current {
+  border-color: var(--focus);
+  background: #fff3cf;
+}
+.cw-clue.done {
+  opacity: 0.75;
+}
+.cw-clue .cw-badge {
+  flex: none;
 }

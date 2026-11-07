@@ -25,19 +25,63 @@ test('palavras cruzadas individual conclui as seis pistas e reinicia pelo teclad
     await page.request.get(`/api/rooms/${page.url().split('/').at(-1)}`)
   ).json();
   const board = crosswords.find((board) => board.title === state.game.title);
+  const known = new Set();
+  const cellsOf = (word) =>
+    [...word.answer].map((letter, i) =>
+      word.direction === 'vertical'
+        ? { id: `${word.row + i},${word.column}`, letter }
+        : { id: `${word.row},${word.column + i}`, letter }
+    );
   for (const [i, word] of board.words.entries()) {
-    await page.locator('#word-choice').selectOption(word.id);
-    await page.locator('.answer-box').first().click();
-    await page.keyboard.type(word.answer.toLowerCase());
+    await page.locator(`[data-cw-word="${word.id}"]`).click();
+    // Digita direto na grade; letras já descobertas por cruzamento são puladas.
+    const missing = cellsOf(word)
+      .filter((cell) => !known.has(cell.id))
+      .map((cell) => cell.letter)
+      .join('');
+    cellsOf(word).forEach((cell) => known.add(cell.id));
+    await page.keyboard.type(missing.toLowerCase());
     // Só confere quando a pessoa aperta Enter.
     await page.keyboard.press('Enter');
-    await expect(page.locator('.solved-words li')).toHaveCount(i + 1);
+    await expect(page.locator('.cw-clue.done')).toHaveCount(i + 1);
   }
   await expect(page.locator('#rematch')).toBeVisible();
   await page.locator('#rematch').focus();
   await page.keyboard.press('Enter');
-  await expect(page.locator('#answer-form')).toBeVisible();
+  await expect(page.locator('#cw-input')).toBeAttached();
   expect(errors).toEqual([]);
+});
+
+test('palavras cruzadas: letras cruzadas aparecem nas outras palavras e a letra pode ser trocada', async ({
+  page,
+}) => {
+  await identify(page);
+  await page
+    .locator('[data-create-game="crossword"] button[type="submit"]')
+    .click();
+  await expect(page.locator('.crossword-grid')).toBeVisible();
+  const state = await (
+    await page.request.get(`/api/rooms/${page.url().split('/').at(-1)}`)
+  ).json();
+  const board = crosswords.find((item) => item.title === state.game.title);
+  const first = board.words[0];
+  await page.locator(`[data-cw-word="${first.id}"]`).click();
+  // Letra errada primeiro: dá para corrigir antes de conferir.
+  await page.keyboard.type('x');
+  await page.keyboard.press('Backspace');
+  await page.keyboard.type(first.answer.toLowerCase());
+  await page.keyboard.press('Enter');
+  await expect(page.locator('.cw-clue.done')).toHaveCount(1);
+  // Toda casa de outra palavra que cruza a primeira já mostra a letra.
+  const cells = await page.locator('.crossword-cell.solved').count();
+  expect(cells).toBe(first.answer.length);
+  const crossing = board.words.find(
+    (word) =>
+      word.id !== first.id &&
+      word.row <= first.row + 3 &&
+      word.column <= first.column + 3
+  );
+  expect(crossing).toBeTruthy();
 });
 
 test('quebra-cabeça conclui com toque ou teclado e funciona com letra extra grande', async ({

@@ -65,16 +65,11 @@ let uiRoom = '';
 let uiRevision = -1;
 let selectedPiece = null;
 let selectedWord = '';
-let answerDraft = '';
-let cwCursor = 0;
-// Letras da resposta, uma por casa (vazio quando a casa está livre).
-const draftLetters = (length) =>
-  Array.from({ length }, (_, i) => {
-    const char = answerDraft[i] ?? '';
-    return /\p{L}/u.test(char) ? char.toLocaleUpperCase('pt-BR') : '';
-  });
-const packLetters = (letters) => letters.map((l) => l || ' ').join('');
-cwCursor = 0;
+// Palavras cruzadas: letras digitadas direto na grade, cruzamentos compartilhados.
+let cwLetters = {};
+let cwCursor = null;
+let cwDirection = 'horizontal';
+let cwFocus = false;
 let showNumbers = false;
 let wordStart = null;
 let wordDraft = '';
@@ -85,60 +80,92 @@ let selectedCard = null;
 let cardDrag = null;
 let cardJustDragged = false;
 
-function crosswordMarkup(game, enabled) {
-  const cells = Array.from({ length: game.rows * game.columns }, () => null);
+const cwCells = (word) =>
+  Array.from({ length: word.length }, (_, i) => ({
+    row: word.row + (word.direction === 'vertical' ? i : 0),
+    col: word.column + (word.direction === 'horizontal' ? i : 0),
+  }));
+const cwKey = (game, row, col) => `${game.title}|${row},${col}`;
+const cwCovers = (word, row, col) =>
+  cwCells(word).some((cell) => cell.row === row && cell.col === col);
+
+// Palavra sob o cursor, preferindo a direção atual.
+function cwWordAt(game, row, col) {
+  const open = game.words.filter(
+    (word) => !game.solved.includes(word.id) && cwCovers(word, row, col)
+  );
+  return open.find((word) => word.direction === cwDirection) ?? open[0] ?? null;
+}
+
+// Letra de uma casa: a da palavra já descoberta ou a que a pessoa digitou.
+function cwLetterAt(game, row, col) {
   for (const word of game.words) {
-    for (let i = 0; i < word.length; i++) {
-      const row = word.row + (word.direction === 'vertical' ? i : 0);
-      const col = word.column + (word.direction === 'horizontal' ? i : 0);
-      const index = row * game.columns + col;
-      cells[index] ??= { letter: '', number: '' };
-      if (i === 0) cells[index].number = word.number;
-      if (word.answer) cells[index].letter = word.answer[i];
-    }
+    if (!word.answer) continue;
+    const index = cwCells(word).findIndex(
+      (cell) => cell.row === row && cell.col === col
+    );
+    if (index >= 0) return { letter: word.answer[index], locked: true };
   }
-  const remaining = game.words.filter((word) => !game.solved.includes(word.id));
-  if (!remaining.some((word) => word.id === selectedWord)) {
-    selectedWord = remaining[0]?.id || '';
-    answerDraft = '';
-    cwCursor = 0;
-  }
-  const chosen = remaining.find((word) => word.id === selectedWord);
+  return { letter: cwLetters[cwKey(game, row, col)] ?? '', locked: false };
+}
+
+function crosswordMarkup(game, enabled) {
   cwGame = game;
-  const active = new Map();
-  if (chosen)
-    for (let i = 0; i < chosen.length; i++) {
-      const row = chosen.row + (chosen.direction === 'vertical' ? i : 0);
-      const col = chosen.column + (chosen.direction === 'horizontal' ? i : 0);
-      active.set(row * game.columns + col, i);
-    }
-  const letters = draftLetters(chosen?.length ?? 0);
-  const cursor = Math.min(cwCursor, Math.max(0, (chosen?.length ?? 1) - 1));
+  const open = game.words.filter((word) => !game.solved.includes(word.id));
+  if (!cwCursor || !cwWordAt(game, cwCursor.row, cwCursor.col)) {
+    const first = open[0];
+    cwCursor = first ? cwCells(first)[0] : null;
+    if (first) cwDirection = first.direction;
+  }
+  const chosen = cwCursor ? cwWordAt(game, cwCursor.row, cwCursor.col) : null;
+  selectedWord = chosen?.id ?? '';
+  const inWord = new Set(
+    (chosen ? cwCells(chosen) : []).map((cell) => `${cell.row},${cell.col}`)
+  );
+  const numbers = new Map();
+  for (const word of game.words)
+    numbers.set(`${word.row},${word.column}`, word.number);
+  const used = new Set(
+    game.words.flatMap((word) =>
+      cwCells(word).map((cell) => `${cell.row},${cell.col}`)
+    )
+  );
   const gridHtml = Array.from(
     { length: game.rows },
     (_, row) =>
-      `<div role="row" class="crossword-row">${cells
-        .slice(row * game.columns, (row + 1) * game.columns)
-        .map((cell, col) => {
-          if (!cell)
+      `<div role="row" class="crossword-row">${Array.from(
+        { length: game.columns },
+        (_, col) => {
+          const id = `${row},${col}`;
+          if (!used.has(id))
             return '<span class="crossword-block" role="cell" aria-label="Sem letra"></span>';
-          const index = row * game.columns + col;
-          const pos = active.get(index);
-          const typed =
-            pos !== undefined && !cell.letter ? (letters[pos] ?? '') : '';
-          const label = `Linha ${row + 1}, coluna ${col + 1}: ${cell.letter || 'vazia'}${cell.number ? ', início da pista ' + cell.number : ''}`;
-          return `<button type="button" role="cell" class="crossword-cell${pos !== undefined ? ' in-word' : ''}${pos !== undefined && pos === cursor ? ' cursor' : ''}" data-cw-row="${row}" data-cw-col="${col}" aria-label="${label}" ${enabled ? '' : 'disabled'}><small aria-hidden="true">${cell.number}</small><b aria-hidden="true">${cell.letter || e(typed)}</b></button>`;
-        })
-        .join('')}</div>`
+          const { letter, locked } = cwLetterAt(game, row, col);
+          const number = numbers.get(id) ?? '';
+          const here = cwCursor?.row === row && cwCursor?.col === col;
+          const label = `Linha ${row + 1}, coluna ${col + 1}: ${letter || 'vazia'}${number ? ', início da pista ' + number : ''}${locked ? ', palavra já descoberta' : ''}`;
+          return `<button type="button" role="cell" class="crossword-cell${inWord.has(id) ? ' in-word' : ''}${here ? ' cursor' : ''}${locked ? ' solved' : ''}" data-cw-row="${row}" data-cw-col="${col}" aria-label="${label}" ${enabled ? '' : 'disabled'}><small aria-hidden="true">${number}</small><b aria-hidden="true">${e(letter)}</b></button>`;
+        }
+      ).join('')}</div>`
   ).join('');
-  return `<section class="crossword-layout"><div>${chosen ? `<div class="cw-active" aria-live="polite"><span class="cw-badge">${chosen.number} ${chosen.direction === 'vertical' ? '↓' : '→'}</span><span>${e(chosen.clue)} <small>(${chosen.length} letras)</small></span></div>` : ''}<h2>${e(game.title)}</h2><div class="crossword-grid" role="table" aria-label="Grade de palavras cruzadas" style="grid-template-columns:repeat(${game.columns},minmax(0,1fr))">${gridHtml}</div><p class="fine">Toque num quadrado, veja a dica no alto e digite a palavra direto. As letras aparecem na grade. Acentos não são obrigatórios.</p></div>
-    <div class="card clue-card">${remaining.length ? `<form id="answer-form" class="stack"><label>Escolha uma pista<select id="word-choice">${remaining.map((word) => `<option value="${word.id}" ${word.id === selectedWord ? 'selected' : ''}>${word.number} · ${word.direction} · ${word.length} letras</option>`).join('')}</select></label><p id="word-clue"><strong>${e(chosen.clue)}</strong></p><div id="crossword-answer" class="answer-boxes" role="group" aria-label="Sua resposta" aria-describedby="word-clue">${letters.map((letter, i) => `<input class="answer-box${i === cursor ? ' cursor' : ''}" data-i="${i}" value="${e(letter)}" maxlength="2" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-label="Letra ${i + 1} de ${letters.length}" ${enabled ? '' : 'disabled'}>`).join('')}</div><p class="fine" id="answer-hint">Digite as letras, toque numa casa para trocar ou apague. Enter confere a palavra.</p><button class="primary" type="submit" ${enabled ? '' : 'disabled'}>Conferir palavra</button></form>${game.feedback?.correct === false && game.feedback.playerId ? '<p role="status">Ainda não é essa palavra. Confira a pista na sua próxima vez.</p>' : ''}` : '<h3>Todas as palavras foram encontradas!</h3>'}
-    <h3 class="solved-heading">Palavras encontradas: ${game.solved.length} de ${game.words.length}</h3><ul class="solved-words">${
-      game.words
-        .filter((word) => word.answer)
-        .map((word) => `<li>${word.number} · ${e(word.answer)}</li>`)
-        .join('') || '<li>Vamos descobrir a primeira?</li>'
-    }</ul></div></section>`;
+  const clueList = (direction, title) => {
+    const words = game.words.filter((word) => word.direction === direction);
+    if (!words.length) return '';
+    return `<div><h3>${title}</h3><ol class="cw-clues">${words
+      .map((word) => {
+        const done = game.solved.includes(word.id);
+        return `<li><button type="button" class="cw-clue${word.id === selectedWord ? ' current' : ''}${done ? ' done' : ''}" data-cw-word="${word.id}" ${enabled && !done ? '' : 'disabled'}><span class="cw-badge">${word.number}</span><span>${done ? `<s>${e(word.clue)}</s> <strong>${e(word.answer)}</strong>` : `${e(word.clue)} <small>(${word.length} letras)</small>`}</span></button></li>`;
+      })
+      .join('')}</ol></div>`;
+  };
+  const hint =
+    game.feedback?.correct === false && game.feedback.playerId
+      ? 'Ainda não é essa palavra. Confira as letras e tente de novo.'
+      : 'Toque num quadrado e digite. Letras que cruzam outra palavra valem para as duas. Apague ou troque qualquer letra antes de conferir.';
+  return `<section class="crossword-layout"><div class="cw-board">${chosen ? `<div class="cw-active" aria-live="polite"><span class="cw-badge">${chosen.number} ${chosen.direction === 'vertical' ? '↓' : '→'}</span><span>${e(chosen.clue)} <small>(${chosen.length} letras)</small></span></div>` : '<h3>Todas as palavras foram descobertas!</h3>'}<h2>${e(game.title)}</h2>
+    <div class="crossword-grid" role="table" aria-label="Grade de palavras cruzadas" style="grid-template-columns:repeat(${game.columns},minmax(0,1fr))">${gridHtml}</div>
+    ${chosen ? `<input id="cw-input" class="cw-input" aria-label="Digite as letras da palavra escolhida" autocomplete="off" autocapitalize="characters" spellcheck="false" ${enabled ? '' : 'disabled'}><div class="cw-actions"><button id="cw-check" class="primary" type="button" ${enabled ? '' : 'disabled'}>Conferir palavra (Enter)</button><button id="cw-erase" class="secondary" type="button" ${enabled ? '' : 'disabled'}>Apagar a palavra</button></div><p class="fine" id="cw-hint" role="status">${hint}</p>` : ''}
+  </div>
+    <div class="card clue-card"><h2>Dicas</h2>${clueList('horizontal', 'Horizontais →')}${clueList('vertical', 'Verticais ↓')}<p><strong>${game.solved.length} de ${game.words.length} descobertas.</strong></p></div></section>`;
 }
 
 // Peça de quebra-cabeça com encaixes: o desenho das pontas depende só da
@@ -504,8 +531,9 @@ export function renderAdditionalGame(context) {
     uiRoom = room.id;
     selectedPiece = null;
     selectedWord = '';
-    answerDraft = '';
-    cwCursor = 0;
+    cwLetters = {};
+    cwCursor = null;
+    cwDirection = 'horizontal';
     showNumbers = false;
     wordStart = null;
     wordDraft = '';
@@ -739,137 +767,146 @@ export function renderAdditionalGame(context) {
     button.onclick = () =>
       perform(() => onAction({ type: button.dataset.trucoAction }));
   });
-  document
-    .querySelector('#word-choice')
-    ?.addEventListener('change', (event) => {
-      selectedWord = event.target.value;
-      answerDraft = '';
-      cwCursor = 0;
-      renderAdditionalGame(context);
-    });
-  const paintDraft = () => {
-    const word = cwGame?.words.find((item) => item.id === selectedWord);
+  // Palavras cruzadas: digitar direto na grade; Enter confere a palavra.
+  const cwInput = document.querySelector('#cw-input');
+  const cwRepaint = () => {
+    cwFocus = true;
+    renderAdditionalGame(context);
+  };
+  const cwStep = (delta) => {
+    const word = cwWordAt(cwGame, cwCursor.row, cwCursor.col);
     if (!word) return;
-    const letters = draftLetters(word.length);
-    document.querySelectorAll('.crossword-cell').forEach((cell) => {
-      cell.classList.remove('cursor');
-    });
-    for (let i = 0; i < word.length; i++) {
-      const row = word.row + (word.direction === 'vertical' ? i : 0);
-      const col = word.column + (word.direction === 'horizontal' ? i : 0);
-      const cell = document.querySelector(
-        `[data-cw-row="${row}"][data-cw-col="${col}"]`
-      );
-      if (!cell) continue;
-      const slot = cell.querySelector('b');
-      if (!word.answer && slot) slot.textContent = letters[i];
-      if (i === cwCursor) cell.classList.add('cursor');
+    const list = cwCells(word);
+    const index = list.findIndex(
+      (cell) => cell.row === cwCursor.row && cell.col === cwCursor.col
+    );
+    const next = list[Math.max(0, Math.min(list.length - 1, index + delta))];
+    cwCursor = { row: next.row, col: next.col };
+  };
+  const cwSubmit = () => {
+    const word = cwCursor && cwWordAt(cwGame, cwCursor.row, cwCursor.col);
+    if (!word || !enabled) return;
+    const list = cwCells(word);
+    const letters = list.map(
+      (cell) => cwLetterAt(cwGame, cell.row, cell.col).letter
+    );
+    const empty = letters.indexOf('');
+    if (empty >= 0) {
+      cwCursor = { row: list[empty].row, col: list[empty].col };
+      cwRepaint();
+      const hint = document.querySelector('#cw-hint');
+      if (hint)
+        hint.textContent = 'Faltam letras. Preencha todos os quadrados.';
+      return;
     }
-    document.querySelectorAll('.answer-box').forEach((box, i) => {
-      box.classList.toggle('cursor', i === cwCursor);
+    perform(async () => {
+      await onAction({
+        type: 'answer',
+        wordId: word.id,
+        answer: letters.join(''),
+      });
     });
   };
-  // Uma casa por letra: digitar avança, apagar volta, e qualquer casa pode ser trocada.
-  const boxes = [...document.querySelectorAll('.answer-box')];
-  const focusBox = (index) => {
-    const box = boxes[Math.max(0, Math.min(index, boxes.length - 1))];
-    box?.focus();
-    box?.select();
-  };
-  const setLetter = (index, letter) => {
-    const letters = draftLetters(boxes.length);
-    letters[index] = letter;
-    answerDraft = packLetters(letters);
-    boxes[index].value = letter;
-  };
-  boxes.forEach((box, i) => {
-    box.addEventListener('focus', () => {
-      cwCursor = i;
-      box.select();
-      paintDraft();
-    });
-    box.addEventListener('input', () => {
-      const typed = [...box.value].filter((char) => /\p{L}/u.test(char));
-      // Digitar sobre uma casa cheia troca a letra pela nova.
-      const letter = (typed.at(-1) ?? '').toLocaleUpperCase('pt-BR');
-      setLetter(i, letter);
-      if (letter && i < boxes.length - 1) focusBox(i + 1);
-      else paintDraft();
-    });
-    box.addEventListener('keydown', (event) => {
-      if (event.key === 'Backspace' || event.key === 'Delete') {
-        event.preventDefault();
-        if (box.value) setLetter(i, '');
-        else if (event.key === 'Backspace' && i > 0) {
-          setLetter(i - 1, '');
-          focusBox(i - 1);
-          return;
+  if (cwInput) {
+    cwInput.addEventListener('input', () => {
+      const typed = [...cwInput.value].filter((char) => /\p{L}/u.test(char));
+      cwInput.value = '';
+      if (!typed.length || !cwCursor) return;
+      for (const char of typed) {
+        // Quadrados já descobertos por cruzamento são pulados.
+        for (let guard = 0; guard < 30; guard++) {
+          if (!cwLetterAt(cwGame, cwCursor.row, cwCursor.col).locked) break;
+          const before = `${cwCursor.row},${cwCursor.col}`;
+          cwStep(1);
+          if (before === `${cwCursor.row},${cwCursor.col}`) break;
         }
-        paintDraft();
-      } else if (event.key === 'ArrowLeft') {
+        if (!cwLetterAt(cwGame, cwCursor.row, cwCursor.col).locked)
+          cwLetters[cwKey(cwGame, cwCursor.row, cwCursor.col)] =
+            char.toLocaleUpperCase('pt-BR');
+        cwStep(1);
+      }
+      cwRepaint();
+    });
+    cwInput.addEventListener('keydown', (event) => {
+      if (!cwCursor) return;
+      if (event.key === 'Enter') {
         event.preventDefault();
-        focusBox(i - 1);
-      } else if (event.key === 'ArrowRight') {
+        cwSubmit();
+      } else if (event.key === 'Backspace' || event.key === 'Delete') {
         event.preventDefault();
-        focusBox(i + 1);
+        const key = cwKey(cwGame, cwCursor.row, cwCursor.col);
+        if (cwLetters[key] || event.key === 'Delete') delete cwLetters[key];
+        else {
+          cwStep(-1);
+          delete cwLetters[cwKey(cwGame, cwCursor.row, cwCursor.col)];
+        }
+        cwRepaint();
+      } else if (
+        ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(event.key)
+      ) {
+        event.preventDefault();
+        const dr = { ArrowUp: -1, ArrowDown: 1 }[event.key] ?? 0;
+        const dc = { ArrowLeft: -1, ArrowRight: 1 }[event.key] ?? 0;
+        const target = { row: cwCursor.row + dr, col: cwCursor.col + dc };
+        const saved = cwDirection;
+        cwDirection = dr ? 'vertical' : 'horizontal';
+        if (cwWordAt(cwGame, target.row, target.col)) {
+          cwCursor = target;
+          cwRepaint();
+        } else cwDirection = saved;
+      } else if (event.key === 'Tab') {
+        event.preventDefault();
+        const open = cwGame.words.filter((w) => !cwGame.solved.includes(w.id));
+        const at = open.findIndex((w) => w.id === selectedWord);
+        const step = event.shiftKey ? -1 : 1;
+        const next = open[(at + step + open.length) % open.length];
+        cwDirection = next.direction;
+        cwCursor = cwCells(next)[0];
+        cwRepaint();
       }
     });
+    if (cwFocus) cwInput.focus({ preventScroll: true });
+  }
+  cwFocus = false;
+  document.querySelector('#cw-check')?.addEventListener('click', cwSubmit);
+  document.querySelector('#cw-erase')?.addEventListener('click', () => {
+    const word = cwCursor && cwWordAt(cwGame, cwCursor.row, cwCursor.col);
+    if (!word) return;
+    for (const cell of cwCells(word))
+      delete cwLetters[cwKey(cwGame, cell.row, cell.col)];
+    cwCursor = cwCells(word)[0];
+    cwRepaint();
+  });
+  document.querySelectorAll('[data-cw-word]').forEach((button) => {
+    button.onclick = () => {
+      const word = cwGame.words.find((w) => w.id === button.dataset.cwWord);
+      if (!word) return;
+      cwDirection = word.direction;
+      cwCursor = cwCells(word)[0];
+      cwRepaint();
+    };
   });
   document.querySelectorAll('[data-cw-row]').forEach((button) => {
     button.onclick = () => {
       if (!enabled || !cwGame) return;
       const row = Number(button.dataset.cwRow);
       const col = Number(button.dataset.cwCol);
-      const covering = cwGame.words.filter((word) => {
-        if (cwGame.solved.includes(word.id)) return false;
-        for (let i = 0; i < word.length; i++) {
-          const r = word.row + (word.direction === 'vertical' ? i : 0);
-          const c = word.column + (word.direction === 'horizontal' ? i : 0);
-          if (r === row && c === col) return true;
-        }
-        return false;
-      });
-      if (!covering.length) return;
-      const starting = covering.find(
-        (word) => word.row === row && word.column === col
+      const open = cwGame.words.filter(
+        (w) => !cwGame.solved.includes(w.id) && cwCovers(w, row, col)
       );
-      const current = covering.findIndex((word) => word.id === selectedWord);
-      const next =
-        current >= 0 && covering.length > 1
-          ? covering[(current + 1) % covering.length]
-          : (starting ?? covering[0]);
-      if (next.id !== selectedWord) answerDraft = '';
-      cwCursor = 0;
-      selectedWord = next.id;
-      renderAdditionalGame(context);
-      document.querySelector('.answer-box')?.focus();
+      const horizontal = open.some((w) => w.direction === 'horizontal');
+      const vertical = open.some((w) => w.direction === 'vertical');
+      if (!horizontal && !vertical) return;
+      const same = cwCursor?.row === row && cwCursor?.col === col;
+      // Tocar de novo no mesmo quadrado troca a direção, quando há as duas.
+      if (same && horizontal && vertical)
+        cwDirection = cwDirection === 'horizontal' ? 'vertical' : 'horizontal';
+      else if (!(cwDirection === 'horizontal' ? horizontal : vertical))
+        cwDirection = horizontal ? 'horizontal' : 'vertical';
+      cwCursor = { row, col };
+      cwRepaint();
     };
   });
-  document
-    .querySelector('#answer-form')
-    ?.addEventListener('submit', (event) => {
-      event.preventDefault();
-      const letters = draftLetters(boxes.length);
-      const empty = letters.indexOf('');
-      if (empty >= 0) {
-        const hint = document.querySelector('#answer-hint');
-        if (hint) hint.textContent = 'Faltam letras. Preencha todas as casas.';
-        focusBox(empty);
-        return;
-      }
-      perform(async () => {
-        await onAction({
-          type: 'answer',
-          wordId: selectedWord,
-          answer: letters.join(''),
-        });
-        answerDraft = '';
-        cwCursor = 0;
-        boxes.forEach((box) => (box.value = ''));
-        paintDraft();
-        focusBox(0);
-      });
-    });
   document
     .querySelector('#show-piece-numbers')
     ?.addEventListener('change', (event) => {

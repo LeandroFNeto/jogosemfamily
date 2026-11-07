@@ -11,7 +11,7 @@ export const crosswords = [
         column: 2,
         direction: 'horizontal',
         answer: 'LUA',
-        clue: 'Ilumina o céu à noite e muda de fase.',
+        clue: 'Satélite natural que faz a maré subir e desce em quatro fases.',
       },
       {
         id: '2v',
@@ -20,7 +20,7 @@ export const crosswords = [
         column: 4,
         direction: 'vertical',
         answer: 'AMOR',
-        clue: 'Sentimento de carinho que une a família.',
+        clue: 'Cresce quanto mais se reparte; começa na primeira letra da lua e termina onde a rua começa.',
       },
       {
         id: '3h',
@@ -29,7 +29,7 @@ export const crosswords = [
         column: 1,
         direction: 'horizontal',
         answer: 'BOLO',
-        clue: 'Doce de aniversário que pode levar velinhas.',
+        clue: 'Tem camadas, cobertura e um pedido feito antes de soprar.',
       },
       {
         id: '3v',
@@ -38,7 +38,7 @@ export const crosswords = [
         column: 1,
         direction: 'vertical',
         answer: 'BOLA',
-        clue: 'Objeto redondo usado para jogar futebol.',
+        clue: 'Redonda, rola e faz a criançada gritar “gol” no quintal; começa como o doce de aniversário.',
       },
       {
         id: '4h',
@@ -47,7 +47,7 @@ export const crosswords = [
         column: 1,
         direction: 'horizontal',
         answer: 'LAR',
-        clue: 'Nossa casa, vista como lugar de acolhimento.',
+        clue: '“Doce ___”, diz o ditado sobre o canto onde o coração mora.',
       },
       {
         id: '5v',
@@ -56,7 +56,7 @@ export const crosswords = [
         column: 3,
         direction: 'vertical',
         answer: 'RUA',
-        clue: 'Caminho da cidade onde ficam as casas.',
+        clue: 'Tem calçada, esquina e número de porta; o último passo do lar leva a ela.',
       },
     ],
   },
@@ -72,7 +72,7 @@ export const crosswords = [
         column: 2,
         direction: 'horizontal',
         answer: 'SOL',
-        clue: 'A estrela que aquece e ilumina o nosso dia.',
+        clue: 'Astro-rei que o girassol acompanha de manhã até a tarde.',
       },
       {
         id: '2v',
@@ -81,7 +81,7 @@ export const crosswords = [
         column: 4,
         direction: 'vertical',
         answer: 'LIMA',
-        clue: 'Fruta cítrica de nome parecido com limão, mas com quatro letras.',
+        clue: 'Capital do Peru, que também é uma fruta cítrica doce; termina como o astro-rei.',
       },
       {
         id: '3h',
@@ -90,7 +90,7 @@ export const crosswords = [
         column: 1,
         direction: 'horizontal',
         answer: 'TREM',
-        clue: 'Transporte com vagões que anda sobre trilhos.',
+        clue: 'Maria-fumaça é um deles; apita antes de sair da estação.',
       },
       {
         id: '3v',
@@ -99,7 +99,7 @@ export const crosswords = [
         column: 1,
         direction: 'vertical',
         answer: 'TETO',
-        clue: 'Parte da casa que fica acima da nossa cabeça.',
+        clue: 'Cobre a casa por cima e também é o limite máximo dos gastos; começa como o trem.',
       },
       {
         id: '4h',
@@ -108,7 +108,7 @@ export const crosswords = [
         column: 1,
         direction: 'horizontal',
         answer: 'TIO',
-        clue: 'O irmão da sua mãe ou do seu pai.',
+        clue: 'Parente que é irmão de um dos seus pais e costuma dar presente.',
       },
       {
         id: '5v',
@@ -117,7 +117,7 @@ export const crosswords = [
         column: 3,
         direction: 'vertical',
         answer: 'OVO',
-        clue: 'Alimento com clara e gema, muito usado em bolos.',
+        clue: 'Redondinho e frágil, vira omelete ou pintinho; lido de trás para a frente é igual.',
       },
     ],
   },
