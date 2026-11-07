@@ -4,7 +4,7 @@ import { createRoomsService } from '../backend/rooms-service.mjs';
 import { defaultPreferences } from '../family-panel/profile.mjs';
 import { allGameIds } from '../shared/games.mjs';
 
-export function setup({ online = () => false } = {}) {
+export function setup({ online = () => false, botDelayMs = 0 } = {}) {
   const store = openStore(':memory:');
   const clock = { time: Date.now() };
   const advance = (ms) => {
@@ -14,6 +14,7 @@ export function setup({ online = () => false } = {}) {
     store,
     now: () => clock.time,
     isOnline: online,
+    botDelayMs,
   });
   const person = (name) => {
     const profile = {

@@ -1,4 +1,14 @@
-import { escapeHtml as e, avatar, botTag, showHelp } from '/components.mjs';
+import {
+  escapeHtml as e,
+  avatar,
+  botTag,
+  showHelp,
+  turnSign,
+  menuButton,
+  gameSheet,
+  screenBar,
+  bindGameMenu,
+} from '/components.mjs';
 import { gameCatalog } from '/games.mjs';
 import { speak } from '/accessibility.mjs';
 import {
@@ -38,6 +48,9 @@ let wordDraft = '';
 let dragFrom = null;
 let cwGame = null;
 let dragMoved = false;
+let selectedCard = null;
+let cardDrag = null;
+let cardJustDragged = false;
 
 function crosswordMarkup(game, enabled) {
   const cells = Array.from({ length: game.rows * game.columns }, () => null);
@@ -128,7 +141,12 @@ function puzzleMarkup(game, enabled) {
   return `<section class="puzzle-layout"><div><div class="puzzle-grid size-${size}" role="group" aria-label="Quebra-cabeça de ${total} partes">${game.pieces.map((piece, index) => `<button id="piece-${index}" class="puzzle-piece${selectedPiece === index ? ' selected-piece' : ''}" data-piece="${index}" aria-pressed="${selectedPiece === index}" aria-label="Posição ${index + 1}. Parte ${piece + 1} da imagem.${piece === index ? ' No lugar certo.' : ''}" ${enabled ? '' : 'disabled'}>${jigsawSvg(piece, size, game.image, piece === index)}${showNumbers ? `<span class="piece-number" aria-hidden="true">${piece + 1}</span>` : ''}</button>`).join('')}</div><p class="fine">${selectedPiece === null ? 'Toque em uma parte e depois em outra para trocar as duas de lugar.' : `Parte na posição ${selectedPiece + 1} selecionada. Agora escolha com qual posição trocar.`}</p></div><aside class="card clue-card"><h2>Imagem de referência</h2><img class="puzzle-reference" src="${e(game.image)}" alt="Imagem completa que será montada"><label class="check"><input id="show-piece-numbers" type="checkbox" ${showNumbers ? 'checked' : ''}> Mostrar números de ajuda</label><p>Coloque as partes na ordem de 1 a ${total}, da esquerda para a direita, de cima para baixo.</p><p><strong>${game.progress[game.playerIds[0]] ?? 0} de ${total} posições na primeira montagem.</strong></p><p>${game.moves} troca(s) na sua montagem.</p></aside></section>`;
 }
 
-function trucoMarkup(game, meId, connected, players) {
+// Truco: tela única de mesa (celular primeiro). Placar no canto, menu de três
+// risquinhos, mesa com os lugares e a mão embaixo. Tocar numa carta a levanta;
+// arrastar até o centro (ou "Jogar esta carta") a lança.
+const TRUCO_STAKES = [1, 3, 6, 9, 12];
+
+function trucoMarkup(game, meId, connected, players, status, enabled, key) {
   const myTeam = game.playerIds.indexOf(meId) % 2;
   const responder =
     game.phase === 'eleven'
@@ -141,12 +159,21 @@ function trucoMarkup(game, meId, connected, players) {
     !game.pendingRaise &&
     game.currentPlayerId === meId;
   const canRespond = connected && responder === meId;
-  const nextStake = [1, 3, 6, 9, 12][
-    [1, 3, 6, 9, 12].indexOf(game.pendingRaise?.value ?? game.stake) + 1
-  ];
+  const nextStake =
+    TRUCO_STAKES[
+      TRUCO_STAKES.indexOf(game.pendingRaise?.value ?? game.stake) + 1
+    ];
+  if (!canPlay || !game.hand.some((card) => card.id === selectedCard))
+    selectedCard = null;
   const plays = game.trick.length ? game.trick : game.lastTrick;
   const order = game.playerIds;
   const at = order.indexOf(meId);
+  const nameOf = (id) => e(players.find((player) => player.id === id)?.name);
+  // Cada carta jogada fica na direção de quem a lançou: em cruz sobre a mesa.
+  const placeOf = (playerId) =>
+    ['bottom', 'left', 'top', 'right'][
+      (order.indexOf(playerId) - at + order.length) % order.length
+    ];
   const seatOf = (offset, place) => {
     const player = players.find(
       (item) => item.id === order[(at + offset) % order.length]
@@ -156,34 +183,158 @@ function trucoMarkup(game, meId, connected, players) {
       game.currentPlayerId === player.id && game.status === 'PLAYING';
     return `<div class="player-card truco-seat seat-${place}${turn ? ' active-player' : ''}">${avatar(player)}<strong>${e(player.name)}${botTag(player)}</strong></div>`;
   };
-  const trucoSeats = `${seatOf(2, 'top')}${seatOf(1, 'left')}${seatOf(3, 'right')}`;
   const meSeat = players.find((item) => item.id === meId);
   const myTurnNow = game.currentPlayerId === meId && game.status === 'PLAYING';
-  return `<section class="truco-summary card"><h2>Equipe A: ${game.teamPoints[0]} <span aria-hidden="true">×</span> Equipe B: ${game.teamPoints[1]}</h2><p>Você está na <strong>Equipe ${myTeam === 0 ? 'A' : 'B'}</strong>. Vence quem chegar a 12 pontos.</p><p>Mão ${game.handNumber} · Valendo ${game.stake} ponto(s).</p></section>
-    ${game.phase === 'between' ? `<section class="card result-card"><h2>${game.lastHand.winnerTeam === null ? 'A mão empatou.' : `Equipe ${game.lastHand.winnerTeam === 0 ? 'A' : 'B'} ganhou ${game.lastHand.points} ponto(s).`}</h2><button id="next-hand" class="primary" ${connected ? '' : 'disabled'}>Próxima mão</button></section>` : ''}
-    ${game.phase === 'eleven' || game.pendingRaise ? `<section class="card response-card"><h2>${game.phase === 'eleven' ? 'Mão de onze' : `Pedido para valer ${game.pendingRaise.value} pontos`}</h2><p>${canRespond ? 'A decisão está com você. Aceite ou corra antes que o tempo acabe.' : 'Aguardando a decisão de ' + e(players.find((player) => player.id === responder)?.name) + '.'}</p>${canRespond ? `<div class="button-row"><button class="primary" data-truco-action="accept">${game.phase === 'eleven' ? 'Jogar valendo 3' : 'Aceitar'}</button><button class="secondary" data-truco-action="fold">Correr</button>${game.phase !== 'eleven' && nextStake ? `<button class="secondary" data-truco-action="raise">Aumentar para ${nextStake}</button>` : ''}</div>` : ''}</section>` : ''}
-    <section class="table truco-table truco-felt" aria-label="Cartas da vaza">${trucoSeats}<h2>${game.trick.length ? 'Vaza em andamento' : game.lastTrick.length ? 'Última vaza' : 'Escolha sua primeira carta'}</h2><div class="played-cards">${plays.map((play) => `<div data-motion="p-${play.card.id}"><span role="img" aria-label="${cardLabel(play.card)}">${cardMarkup(play.card)}</span><p>${e(players.find((player) => player.id === play.playerId)?.name)}</p></div>`).join('')}</div><div class="vira">Vira: <span role="img" aria-label="${cardLabel(game.vira)}">${cardMarkup(game.vira)}</span><span>manilha ${rankName(manilhaRank(game.vira))}</span></div><p>Vazas: ${game.trickWinners.map((team) => (team === null ? 'empate' : 'Equipe ' + (team === 0 ? 'A' : 'B'))).join(' · ') || 'nenhuma concluída'}</p></section>
-    <div class="player-card truco-seat seat-me${myTurnNow ? ' active-player' : ''}">${avatar(meSeat)}<strong>${e(meSeat?.name)}${myTurnNow ? ' · sua vez' : ''}</strong></div>
-    <section class="hand-section truco-hand"><h2>Suas cartas</h2><div class="card-hand">${game.hand
-      .map((card) => {
-        const manilha = card.rank === manilhaRank(game.vira);
-        return `<button id="card-${card.id}" data-motion="h-${card.id}" data-card="${card.id}" class="card-button${manilha ? ' is-manilha' : ''}" aria-label="Jogar ${cardLabel(card)}${manilha ? ', manilha' : ''}" ${canPlay ? '' : 'disabled'}>${cardMarkup(card, { manilha })}${manilha ? '<span class="manilha-tag" aria-hidden="true">manilha</span>' : ''}</button>`;
-      })
-      .join(
-        ''
-      )}</div>${canPlay && nextStake && !game.teamPoints.includes(11) && (game.raiseAllowedTeam === null || game.raiseAllowedTeam === myTeam) ? `<button class="secondary" data-truco-action="raise">${game.stake === 1 ? 'Pedir Truco' : `Aumentar para ${nextStake}`}</button>` : ''}
-    ${
+  const wonBy = (team) => game.trickWinners.filter((w) => w === team).length;
+  const label = (team) => (team === 0 ? 'A' : 'B');
+  const canRaise =
+    canPlay &&
+    nextStake &&
+    !game.teamPoints.includes(11) &&
+    (game.raiseAllowedTeam === null || game.raiseAllowedTeam === myTeam);
+  const finished = game.status === 'FINISHED';
+  const decision = () =>
+    `<section class="truco-overlay" aria-label="Decisão"><h2>${game.phase === 'eleven' ? 'Mão de onze' : `Pedido para valer ${game.pendingRaise.value} pontos`}</h2><p>${canRespond ? 'A decisão está com você.' : 'Aguardando a decisão de ' + nameOf(responder) + '.'}</p>${canRespond ? `<div class="button-row"><button class="primary" data-truco-action="accept">${game.phase === 'eleven' ? 'Jogar valendo 3' : 'Aceitar'}</button><button class="secondary" data-truco-action="fold">Correr</button>${game.phase !== 'eleven' && nextStake ? `<button class="secondary" data-truco-action="raise">Aumentar para ${nextStake}</button>` : ''}</div>` : ''}${
       game.partnerHands
-        ? `<h3>Cartas dos parceiros na mão de onze</h3>${Object.entries(
-            game.partnerHands
-          )
+        ? Object.entries(game.partnerHands)
             .map(
               ([id, cards]) =>
-                `<p>${e(players.find((player) => player.id === id)?.name)}: ${cards.map(cardLabel).join(', ')}</p>`
+                `<p class="fine">${nameOf(id)}: ${cards.map(cardLabel).join(', ')}</p>`
             )
-            .join('')}`
+            .join('')
         : ''
     }</section>`;
+  const overlay = finished
+    ? `<section class="truco-overlay" aria-label="Fim da partida"><h2>${e(status)}</h2><button id="rematch" class="primary" ${game.rematch.includes(meId) || !connected ? 'disabled' : ''}>${game.rematch.includes(meId) ? 'Aguardando os participantes…' : 'Jogar novamente'}</button></section>`
+    : game.phase === 'between'
+      ? `<section class="truco-overlay" aria-label="Fim da mão"><h2>${game.lastHand.winnerTeam === null ? 'A mão empatou.' : `Equipe ${label(game.lastHand.winnerTeam)} ganhou ${game.lastHand.points} ponto(s).`}</h2><button id="next-hand" class="primary" ${connected ? '' : 'disabled'}>Próxima mão</button></section>`
+      : game.phase === 'eleven' || game.pendingRaise
+        ? decision()
+        : '';
+  const hint = !connected
+    ? 'Reconectando à mesa…'
+    : canPlay
+      ? selectedCard
+        ? ''
+        : 'Toque numa carta para escolher. Depois arraste até o centro.'
+      : '';
+  const mine = myTeam;
+  const theirs = 1 - myTeam;
+  return `<section class="game-page truco-screen">
+    <header class="truco-top">
+      <div class="truco-summary" aria-label="Placar">
+        <h2 class="visually-hidden">Equipe A: ${game.teamPoints[0]} × Equipe B: ${game.teamPoints[1]}</h2>
+        <div class="score-grid" aria-hidden="true"><span></span><span>Vazas</span><span>Pontos</span><span>Valendo</span><b class="us">NÓS</b><span>${wonBy(mine)}</span><span>${game.teamPoints[mine]}</span><b class="stake">${game.stake}</b><b>ELES</b><span>${wonBy(theirs)}</span><span>${game.teamPoints[theirs]}</span></div>
+        <p class="visually-hidden">Você está na Equipe ${label(myTeam)}. Vence quem chegar a 12 pontos. Mão ${game.handNumber}, valendo ${game.stake} ponto(s).</p>
+      </div>
+      ${menuButton()}
+    </header>
+    ${gameSheet({ connected, readId: 'read-game', readLabel: 'Ler instruções em voz alta' })}
+    <div id="turn-status" tabindex="-1" class="truco-status${enabled ? ' my-turn' : ''}" role="status" aria-live="polite">${enabled && !finished ? 'Sua vez!' : e(status)}</div>
+    <div class="truco-stage">
+      <section class="table truco-table truco-felt" aria-label="Mesa de truco">
+        ${seatOf(2, 'top')}${seatOf(1, 'left')}${seatOf(3, 'right')}
+        <h2 class="visually-hidden">${game.trick.length ? 'Vaza em andamento' : game.lastTrick.length ? 'Última vaza' : 'Escolha sua primeira carta'}</h2>
+        <div class="truco-center" id="truco-drop"><div class="played-cards">${plays.map((play) => `<div class="at-${placeOf(play.playerId)}" data-motion="p-${play.card.id}"><span role="img" aria-label="${cardLabel(play.card)}">${cardMarkup(play.card)}</span><p>${nameOf(play.playerId)}</p></div>`).join('')}</div>${plays.length || !canPlay ? '' : '<span class="drop-hint" aria-hidden="true">Solte a carta aqui</span>'}</div>
+        <div class="vira">Vira <span role="img" aria-label="${cardLabel(game.vira)}">${cardMarkup(game.vira)}</span><span>manilha ${rankName(manilhaRank(game.vira))}</span></div>
+        <div class="player-card truco-seat seat-me${myTurnNow ? ' active-player' : ''}">${avatar(meSeat)}<strong>${e(meSeat?.name)}${myTurnNow ? ' · sua vez' : ''}</strong></div>
+        ${overlay}
+        ${turnSign(key, enabled && game.status === 'PLAYING')}
+      </section>
+    </div>
+    <footer class="truco-dock">
+      ${canRaise ? `<button class="truco-call" data-truco-action="raise" type="button">${game.stake === 1 ? 'TRUCO' : `${nextStake}!`}</button>` : ''}
+      <div class="truco-slot">${selectedCard && canPlay ? '<button id="play-picked" class="primary truco-play" type="button">Jogar esta carta (ou arraste)</button>' : `<p class="truco-hint" aria-live="polite">${hint}</p>`}</div>
+      <div class="card-hand">${game.hand
+        .map((card) => {
+          const manilha = card.rank === manilhaRank(game.vira);
+          const picked = card.id === selectedCard;
+          return `<button id="card-${card.id}" data-motion="h-${card.id}" data-card="${card.id}" type="button" class="card-button${manilha ? ' is-manilha' : ''}${picked ? ' picked' : ''}" aria-pressed="${picked}" aria-label="${picked ? 'Selecionada: ' : 'Escolher '}${cardLabel(card)}${manilha ? ', manilha' : ''}" ${canPlay ? '' : 'disabled'}>${cardMarkup(card, { manilha })}${manilha ? '<span class="manilha-tag" aria-hidden="true">manilha</span>' : ''}</button>`;
+        })
+        .join('')}</div>
+    </footer>
+  </section>`;
+}
+
+// Truco: seleção por toque, arrastar até o centro e menu de três risquinhos.
+function setupTruco({ perform, onAction, context }) {
+  const play = (cardId) => perform(() => onAction({ type: 'play', cardId }));
+  bindGameMenu();
+  document.querySelector('#play-picked')?.addEventListener('click', () => {
+    if (selectedCard) play(selectedCard);
+  });
+  const drop = document.querySelector('#truco-drop');
+  document.querySelectorAll('[data-card]:not([disabled])').forEach((button) => {
+    button.addEventListener('click', () => {
+      if (cardJustDragged) return;
+      selectedCard =
+        selectedCard === button.dataset.card ? null : button.dataset.card;
+      renderAdditionalGame(context);
+      context.onRedraw?.();
+    });
+    button.addEventListener('pointerdown', (event) => {
+      if (event.button > 0) return;
+      const startX = event.clientX;
+      const startY = event.clientY;
+      let ghost = null;
+      const over = (x, y) => {
+        const rect = document
+          .querySelector('.truco-felt')
+          ?.getBoundingClientRect();
+        const dock = document
+          .querySelector('.truco-dock')
+          ?.getBoundingClientRect();
+        return Boolean(
+          rect &&
+          dock &&
+          x >= rect.left &&
+          x <= rect.right &&
+          y >= rect.top &&
+          y < dock.top - 8
+        );
+      };
+      const move = (moved) => {
+        if (!ghost) {
+          if (Math.hypot(moved.clientX - startX, moved.clientY - startY) < 8)
+            return;
+          ghost = button.querySelector('.playing-card').cloneNode(true);
+          ghost.classList.add('card-ghost');
+          document.body.append(ghost);
+          document.body.classList.add('dragging');
+          button.classList.add('picked', 'dragging-source');
+        }
+        ghost.style.left = `${moved.clientX}px`;
+        ghost.style.top = `${moved.clientY}px`;
+        drop.classList.toggle('hot', over(moved.clientX, moved.clientY));
+      };
+      const finish = (ended, cancelled) => {
+        button.removeEventListener('pointermove', move);
+        button.removeEventListener('pointerup', end);
+        button.removeEventListener('pointercancel', end);
+        cardDrag = null;
+        document.body.classList.remove('dragging');
+        drop.classList.remove('hot');
+        button.classList.remove('dragging-source');
+        if (!ghost) return;
+        ghost.remove();
+        cardJustDragged = true;
+        setTimeout(() => (cardJustDragged = false), 80);
+        if (!cancelled && over(ended.clientX, ended.clientY))
+          play(button.dataset.card);
+        else if (!cancelled) {
+          selectedCard = button.dataset.card;
+          renderAdditionalGame(context);
+          context.onRedraw?.();
+        }
+      };
+      const end = (ended) => finish(ended, ended.type === 'pointercancel');
+      cardDrag = { cancel: () => finish(event, true) };
+      button.setPointerCapture?.(event.pointerId);
+      button.addEventListener('pointermove', move);
+      button.addEventListener('pointerup', end);
+      button.addEventListener('pointercancel', end);
+    });
+  });
 }
 
 const suitOrder = ['clubs', 'diamonds', 'hearts', 'spades', 'joker'];
@@ -268,6 +419,25 @@ function wordsearchMarkup(game, enabled) {
     ${game.feedback?.correct === false ? '<p role="status">Essa não valeu. Confira a lista na sua próxima vez.</p>' : ''}</aside></section>`;
 }
 
+const LEVEL_NAMES = { easy: 'Fácil', medium: 'Média', hard: 'Difícil' };
+const LEVEL_ORDER = ['easy', 'medium', 'hard'];
+
+// Tela de fim de partida: jogar de novo e, onde há níveis, subir a dificuldade.
+function endMarkup(room, game, status, meId, connected) {
+  const waiting = game.rematch.includes(meId) || !connected;
+  const level =
+    room.gameId === 'wordsearch'
+      ? game.level
+      : room.gameId === 'puzzle'
+        ? { 3: 'easy', 4: 'medium', 5: 'hard' }[game.size]
+        : null;
+  const next = level ? LEVEL_ORDER[LEVEL_ORDER.indexOf(level) + 1] : null;
+  const again = `<button id="rematch" class="primary" ${waiting ? 'disabled' : ''}>${game.rematch.includes(meId) ? 'Aguardando os participantes…' : 'Jogar novamente'}</button>`;
+  if (!['wordsearch', 'crossword', 'puzzle'].includes(room.gameId))
+    return `<section class="card result-card"><h2>Que tal mais uma?</h2>${again}</section>`;
+  return `<div class="end-screen" role="dialog" aria-modal="true" aria-labelledby="end-title"><div class="end-card"><p class="end-stars" aria-hidden="true">★ ★ ★</p><h2 id="end-title">${e(status)}</h2>${level ? `<p>Dificuldade desta partida: <strong>${LEVEL_NAMES[level]}</strong>.</p>` : ''}${again}${next ? `<button id="harder" class="secondary" data-level="${next}" ${waiting ? 'disabled' : ''}>Aumentar dificuldade (${LEVEL_NAMES[next]})</button>` : level ? '<p class="fine">Você já está na dificuldade mais alta.</p>' : ''}<a class="end-home" href="/">Voltar ao início</a></div></div>`;
+}
+
 export function renderAdditionalGame(context) {
   const {
     room,
@@ -287,11 +457,14 @@ export function renderAdditionalGame(context) {
     showNumbers = false;
     wordStart = null;
     wordDraft = '';
+    selectedCard = null;
   }
   if (uiRevision !== room.revision) {
     selectedPiece = null;
     wordStart = null;
   }
+  if (uiRevision !== room.revision) selectedCard = null;
+  cardDrag?.cancel();
   uiRevision = room.revision;
   const game = room.game;
   const players = room.players;
@@ -329,7 +502,7 @@ export function renderAdditionalGame(context) {
   const enabled = connected && !finished && (!actor || actor === me.id);
   const content =
     room.gameId === 'cards'
-      ? trucoMarkup(game, me.id, connected, players)
+      ? ''
       : room.gameId === 'cacheta'
         ? cachetaMarkup(game, me.id, connected, players)
         : room.gameId === 'wordsearch'
@@ -337,12 +510,32 @@ export function renderAdditionalGame(context) {
           : room.gameId === 'crossword'
             ? crosswordMarkup(game, enabled)
             : puzzleMarkup(game, enabled);
-  setContent(`<section class="game-page"><div class="game-top"><div><p class="eyebrow">A NOSSA MESA</p><h1>${e(metadata.name)} <span class="tag">${room.mode === 'bot' ? 'Contra bots' : 'Sem pressa'}</span></h1></div><button id="leave-room" class="quiet">Sair (um bot assume)</button></div>
+  setContent(
+    room.gameId === 'cards'
+      ? trucoMarkup(
+          game,
+          me.id,
+          connected,
+          players,
+          status,
+          enabled,
+          `${room.id}:${room.revision}`
+        )
+      : `<section class="game-page game-screen game-${room.gameId}">${screenBar({ title: e(metadata.name) })}${gameSheet({ connected, readId: 'read-game', readLabel: 'Ler instruções em voz alta', info: `<strong>${e(metadata.name)}</strong> · ${room.mode === 'bot' ? 'Contra bots' : 'Sem pressa'}` })}
     <section class="players additional-players" aria-label="Participantes" ${room.gameId === 'cards' ? 'hidden' : ''}>${(room.gameId === 'cards' ? [] : players).map((player, i) => `<div class="player-card${actor === player.id && !finished ? ' active-player' : ''}">${avatar(player)}<div><strong>${e(player.name)}${player.id === me.id ? ' (você)' : ''}${botTag(player)}</strong><small>${room.gameId === 'cards' ? `Equipe ${i % 2 === 0 ? 'A' : 'B'} · ` : ''}${game.score[player.id].wins} vitória(s) · ${game.score[player.id].points} ponto(s)</small>${game.progress ? `<small>${game.progress[player.id]} de ${room.gameId === 'puzzle' ? (game.size ?? 3) ** 2 : game.words.length} encontrados</small>` : ''}</div></div>`).join('')}</section>
     <div id="turn-status" tabindex="-1" class="turn-banner${enabled ? ' my-turn' : ''}" role="status" aria-live="polite"><strong>${e(status)}</strong><span>${room.mode === 'bot' ? 'Cada jogada sua dá uma vez ao bot.' : room.solo ? 'No seu ritmo, sem limite de tempo.' : 'Jogue com pessoas conhecidas, no tempo combinado.'}</span></div>
     ${content}
-    ${finished ? `<section class="card result-card"><h2>Que tal mais uma?</h2><button id="rematch" class="primary" ${game.rematch.includes(me.id) || !connected ? 'disabled' : ''}>${game.rematch.includes(me.id) ? 'Aguardando os participantes…' : 'Jogar novamente'}</button></section>` : ''}
-    <div class="game-bottom"><span class="connection">${connected ? '● Mesa conectada' : 'Reconectando…'}</span><button id="read-game" class="quiet">Ler instruções em voz alta</button><button id="game-help" class="quiet">Preciso de ajuda</button></div></section>`);
+    ${finished ? endMarkup(room, game, status, me.id, connected) : ''}
+  </section>`
+  );
+  if (room.gameId !== 'cards' && actor === me.id && !finished && connected)
+    document
+      .querySelector('.game-page')
+      ?.insertAdjacentHTML(
+        'beforeend',
+        turnSign(`${room.id}:${room.revision}`, true)
+      );
+  bindGameMenu();
   document.querySelector('#leave-room').onclick = onLeave;
   document.querySelector('#game-help').onclick = () => showHelp(room.gameId);
   document.querySelector('#read-game').onclick = () =>
@@ -365,16 +558,17 @@ export function renderAdditionalGame(context) {
     );
   document
     .querySelector('#rematch')
-    ?.addEventListener('click', () => perform(onRematch));
+    ?.addEventListener('click', () => perform(() => onRematch()));
+  document.querySelector('#harder')?.addEventListener('click', (event) => {
+    const level = event.currentTarget.dataset.level;
+    perform(() => onRematch({ level }));
+  });
   document
     .querySelector('#next-hand')
     ?.addEventListener('click', () =>
       perform(() => onAction({ type: 'next-hand' }))
     );
-  document.querySelectorAll('[data-card]').forEach((button) => {
-    button.onclick = () =>
-      perform(() => onAction({ type: 'play', cardId: button.dataset.card }));
-  });
+  if (room.gameId === 'cards') setupTruco({ perform, onAction, context });
   document
     .querySelector('#draw-stock')
     ?.addEventListener('click', () =>

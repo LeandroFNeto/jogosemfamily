@@ -44,8 +44,7 @@ test('partida cancelada por inatividade avisa, leva ao menu e exige nova partida
   bot.app.rooms.sweep();
   await bot.app.whatsapp.idle();
   const warning = bot.fake.take(ANA).join('\n');
-  assert.match(warning, /faltaram jogadores/);
-  assert.match(warning, /\[imagem\]/);
+  assert.equal(warning, '', 'cancelamento só aparece na web');
   assert.match(
     lastOf(
       await bot.say(ANA, 'estado', {

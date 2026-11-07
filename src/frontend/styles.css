@@ -1895,45 +1895,6 @@ legend {
   }
 }
 
-/* Truco no celular: placar, vira e vaza em poucas linhas */
-@media (max-width: 700px) {
-  .truco-summary {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    gap: 0.15rem 0.7rem;
-    padding: 0.7rem 0.9rem;
-    margin-bottom: 0.6rem;
-  }
-  .truco-summary > h2 {
-    grid-column: 1;
-    font-size: 1.1rem;
-    margin: 0;
-  }
-  .truco-summary > p {
-    grid-column: 1;
-    margin: 0;
-    font-size: 0.8rem;
-    line-height: 1.35;
-  }
-  .truco-summary > .vira {
-    grid-column: 2;
-    grid-row: 1 / 4;
-    display: grid;
-    justify-items: center;
-    align-content: center;
-    gap: 0.2rem;
-    font-size: 0.75rem;
-  }
-  .truco-table h2 {
-    font-size: 1rem;
-    margin: 0 0 0.3rem;
-  }
-  .truco-table > p {
-    margin: 0.3rem 0 0;
-    font-size: 0.8rem;
-  }
-}
-
 /* Cacheta e cartas no celular: monte e descarte lado a lado, mão em 5 por linha */
 @media (max-width: 700px) {
   .cacheta-piles {
@@ -2475,56 +2436,381 @@ body.dragging {
   filter: drop-shadow(0 0.6rem 0.6rem #0000005c);
 }
 
-/* Truco 2 contra 2: mesa vermelha com os lugares ao redor */
-.truco-felt {
-  position: relative;
-  display: grid;
-  grid-template-columns: minmax(4.5rem, 1fr) minmax(0, 2.2fr) minmax(
-      4.5rem,
-      1fr
-    );
-  grid-template-areas: '. top .' 'left cards right' '. vira .';
+/* Truco: tela de mesa em tela cheia, desenhada primeiro para 360–412 px */
+body:has(.truco-screen) {
+  overflow: hidden;
+}
+body:has(.truco-screen) #notice:not([hidden]) {
+  position: fixed;
+  inset: 0.5rem 0.5rem auto;
+  z-index: 70;
+  width: auto;
+  margin: 0;
+}
+.truco-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
   gap: 0.4rem;
+  padding: 0.6rem 0.6rem 0;
+  background: #1c3a30;
+  color: #fff;
+  max-width: none;
+  margin: 0;
+  overflow: hidden;
+  height: 100dvh;
+}
+.truco-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+.truco-screen .truco-summary {
+  padding: 0.35rem 0.6rem;
+  margin: 0;
+  border-radius: 0.7rem;
+  background: #0000008c;
+  color: #fff;
+  border: 0;
+  box-shadow: none;
+}
+.score-grid {
+  display: grid;
+  grid-template-columns: 2.4rem repeat(3, 2.6rem);
+  gap: 0.1rem 0.3rem;
+  text-align: center;
   align-items: center;
-  padding: 0.8rem 0.5rem;
+  font-size: 0.7rem;
+}
+.score-grid > span:not(:empty) {
+  font-size: 1rem;
+  font-weight: 700;
+}
+.score-grid > span:nth-child(-n + 4) {
+  font-size: 0.68rem;
+  font-weight: 400;
+  opacity: 0.8;
+}
+.score-grid b {
+  text-align: left;
+  font-size: 0.8rem;
+}
+.score-grid .us,
+.score-grid .stake {
+  color: #f2c94c;
+}
+.score-grid .stake {
+  grid-column: 4;
+  grid-row: 2 / span 2;
+  font-size: 1.5rem;
+  text-align: center;
+}
+.game-menu-button {
+  width: 2.9rem;
+  height: 2.9rem;
+  min-height: 0;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: 0;
+  background: #fffefa;
+  color: #233c34;
+}
+.game-sheet {
+  position: fixed;
+  z-index: 90;
+  top: 3.7rem;
+  right: 0.6rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 14rem;
+  padding: 0.5rem;
+  border-radius: 0.9rem;
+  background: #fffefa;
+  color: #233c34;
+  box-shadow: 0 0.6rem 1.4rem #00000080;
+}
+.game-sheet[hidden] {
+  display: none;
+}
+.game-sheet a,
+.game-sheet button {
+  display: block;
+  min-height: 2.75rem;
+  padding: 0.6rem 0.8rem;
+  border: 0;
+  border-radius: 0.6rem;
+  background: transparent;
+  color: #233c34;
+  text-align: left;
+  text-decoration: none;
+  font: inherit;
+  font-weight: 600;
+}
+.game-sheet a:hover,
+.game-sheet button:hover {
+  background: #e5e9dc;
+}
+.game-sheet .connection {
+  margin: 0.2rem 0.8rem 0.3rem;
+  font-size: 0.8rem;
+  color: #58675e;
+}
+.truco-status {
+  text-align: center;
+  font-size: 0.9rem;
+  font-weight: 600;
+  min-height: 1.3rem;
+}
+.truco-status.my-turn {
+  color: #f2c94c;
+}
+.truco-screen .turn-timer {
+  margin: 0 0.3rem;
+}
+.truco-screen .turn-timer-label {
+  margin: 0 0 0.15rem;
+  font-size: 0.75rem;
+  color: #fff;
+}
+.truco-screen .turn-timer-track {
+  height: 0.5rem;
+}
+.truco-screen .turn-timer-clock {
+  font-size: 1.1rem;
+}
+.truco-stage {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+}
+.truco-screen .truco-felt {
+  position: relative;
+  display: block;
+  flex: 1;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
   border-radius: 2rem;
   background: #7a2a2e;
-  border: 0;
   box-shadow:
     inset 0 0 0 0.4rem #5d1f23,
     0 0.4rem 0.9rem #00000055;
-  min-height: 19rem;
 }
-.truco-felt > h2 {
+.truco-screen .truco-seat {
   position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip-path: inset(50%);
-}
-.truco-felt > p {
-  grid-column: 1 / -1;
-  text-align: center;
   margin: 0;
 }
-.truco-felt .played-cards {
-  grid-area: cards;
-  justify-content: center;
+.truco-screen .truco-felt .seat-top {
+  top: 0.6rem;
+  left: 50%;
+  transform: translateX(-50%);
 }
-.truco-felt .vira {
-  grid-area: vira;
-  justify-self: center;
+.truco-screen .truco-felt .seat-left {
+  left: 0.5rem;
+  top: 50%;
+  transform: translateY(-50%);
+}
+.truco-screen .truco-felt .seat-right {
+  right: 0.5rem;
+  top: 50%;
+  transform: translateY(-50%);
+}
+.truco-screen .truco-felt .seat-me {
+  left: 50%;
+  bottom: 0.5rem;
+  transform: translateX(-50%);
+  flex-direction: column;
+}
+.truco-screen .seat-me strong {
+  background: #00000073;
+}
+.truco-center {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 56%;
+  min-height: 7rem;
+  transform: translate(-50%, -50%);
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.2rem 0.8rem;
-  border-radius: 999px;
-  background: #00000073;
-  font-size: 0.8rem;
+  justify-content: center;
+  border-radius: 1.2rem;
+  border: 2px dashed transparent;
+  transition:
+    border-color 0.15s,
+    background-color 0.15s;
 }
-.truco-felt .vira .playing-card,
-.truco-felt .vira svg {
-  width: 1.8rem;
+body.dragging .truco-center {
+  border-color: #ffffff80;
+  background: #ffffff14;
+}
+.truco-center.hot {
+  border-color: #f2c94c;
+  background: #f2c94c33;
+}
+.truco-center .played-cards {
+  gap: 0.3rem;
+  padding: 0;
+  flex-wrap: nowrap;
+  justify-content: center;
+}
+.truco-center .played-cards > div {
+  width: auto;
+}
+.truco-center .played-cards .playing-card {
+  width: clamp(3rem, 14vw, 4.2rem);
+}
+.truco-center .played-cards p {
+  margin: 0.15rem 0 0;
+  font-size: 0.65rem;
+}
+.drop-hint {
+  position: absolute;
+  font-size: 0.8rem;
+  color: #ffffffb3;
+  text-align: center;
+  pointer-events: none;
+}
+.truco-screen .truco-felt .vira {
+  position: absolute;
+  right: 0.6rem;
+  top: 0.6rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+  padding: 0.3rem 0.5rem;
+  border-radius: 0.8rem;
+  background: #00000073;
+  font-size: 0.7rem;
+}
+.truco-screen .truco-felt .vira .playing-card {
+  width: 2.2rem;
+}
+.truco-overlay {
+  position: absolute;
+  left: 0.8rem;
+  right: 0.8rem;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 5;
+  padding: 0.9rem;
+  border-radius: 1rem;
+  background: #fffefa;
+  color: #233c34;
+  text-align: center;
+  box-shadow: 0 0.6rem 1.4rem #00000080;
+}
+.truco-overlay h2 {
+  margin: 0 0 0.4rem;
+  font-size: 1.05rem;
+  color: #233c34;
+}
+.truco-overlay p {
+  margin: 0 0 0.5rem;
+}
+.truco-overlay .button-row {
+  justify-content: center;
+}
+.truco-dock {
+  position: relative;
+  margin: 0 -0.6rem;
+  padding: 0.6rem 0.6rem calc(0.8rem + env(safe-area-inset-bottom));
+  border-radius: 1.3rem 1.3rem 0 0;
+  background: #141413;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+}
+.truco-slot {
+  width: 100%;
+  min-height: 2.9rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.truco-hint {
+  margin: 0;
+  min-height: 1.1rem;
+  font-size: 0.78rem;
+  color: #ffffffb3;
+  text-align: center;
+}
+.truco-call {
+  position: absolute;
+  right: 0.8rem;
+  top: -3.4rem;
+  min-height: 2.9rem;
+  padding: 0 1.4rem;
+  border: 0;
+  border-radius: 1.5rem;
+  background: #9c4b2a;
+  color: #fff;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  box-shadow: 0 0.3rem 0.8rem #00000066;
+}
+.truco-dock .card-hand {
+  display: flex;
+  flex-wrap: nowrap;
+  justify-content: center;
+  gap: 0.6rem;
+  padding: 0.2rem 0 0;
+  min-height: 7.6rem;
+  align-items: flex-end;
+}
+.truco-dock .card-button {
+  padding: 0;
+  border: 0;
+  border-radius: 0.6rem;
+  background: transparent;
+  touch-action: none;
+  user-select: none;
+  position: relative;
+  transition: transform 0.15s;
+}
+.truco-dock .card-button:disabled {
+  opacity: 0.75;
+}
+.truco-dock .card-button:not(:disabled) {
+  outline: 3px solid #f2c94c66;
+  outline-offset: 2px;
+}
+.truco-dock .card-button.picked {
+  transform: translateY(-1.4rem);
+  outline: 3px solid #f2c94c;
+}
+.truco-dock .card-button.dragging-source {
+  opacity: 0.35;
+}
+.truco-dock .playing-card {
+  width: clamp(4.4rem, 24vw, 6rem);
+}
+.truco-play {
+  width: 100%;
+  max-width: 20rem;
+}
+.card-ghost {
+  position: fixed;
+  z-index: 90;
+  width: 5rem;
+  transform: translate(-50%, -50%) rotate(4deg);
+  pointer-events: none;
+  filter: drop-shadow(0 0.6rem 0.6rem #0000005c);
+}
+.truco-seat .avatar,
+.player-card.truco-seat .avatar {
+  display: inline-flex;
+  width: 3.2rem;
+  height: 3.2rem;
+  border: 3px solid #fffefa;
 }
 .truco-seat {
   display: flex;
@@ -2551,45 +2837,729 @@ body.dragging {
   border-color: #f2c94c;
   box-shadow: 0 0 0 3px #f2c94c88;
 }
-.truco-felt .seat-top {
-  grid-area: top;
-  justify-self: center;
+@media (max-height: 640px) {
+  .truco-seat .avatar,
+  .player-card.truco-seat .avatar {
+    width: 2.5rem;
+    height: 2.5rem;
+  }
+  .truco-dock .playing-card {
+    width: clamp(3.6rem, 20vw, 5rem);
+  }
+  .truco-dock .card-hand {
+    min-height: 6.2rem;
+  }
 }
-.truco-felt .seat-left {
-  grid-area: left;
+@media (min-width: 760px) {
+  .truco-screen {
+    padding-inline: max(0.6rem, calc((100vw - 56rem) / 2));
+  }
+  .truco-dock {
+    margin-inline: calc(-1 * max(0.6rem, (100vw - 56rem) / 2));
+  }
 }
-.truco-felt .seat-right {
-  grid-area: right;
+
+/* Truco: "sua vez" e segundos bem grandes, para acompanhar com calma */
+.truco-status.my-turn {
+  font-size: 1.6rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  animation: truco-pulse 1.6s ease-in-out infinite;
 }
-.seat-me {
-  margin: -0.4rem auto 0;
-  flex-direction: row;
+.truco-screen .turn-timer[data-mine='true'] .turn-timer-label {
+  display: flex;
+  align-items: baseline;
   justify-content: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
 }
-.seat-me strong {
-  background: #214e40;
+.truco-screen .turn-timer[data-mine='true'] .turn-timer-seconds {
+  font-size: 2.6rem;
+  line-height: 1;
+  font-weight: 800;
+  color: #f2c94c;
 }
-.truco-hand {
+.truco-screen .turn-timer[data-band='red'] .turn-timer-seconds {
+  color: #ff8a80;
+}
+@keyframes truco-pulse {
+  50% {
+    transform: scale(1.06);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .truco-status.my-turn {
+    animation: none;
+  }
+}
+
+/* Letreiro "SUA VEZ" desenhado, no meio da mesa, a cada nova vez */
+.turn-sign {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  z-index: 80;
+  width: min(92vw, 22rem);
+  transform: translate(-50%, -50%) rotate(-4deg);
+  pointer-events: none;
+  animation: turn-sign 2.2s ease-out forwards;
+}
+.turn-sign svg {
+  display: block;
+  width: 100%;
+  overflow: visible;
+  filter: drop-shadow(0 0.5rem 0.6rem #00000099);
+}
+.turn-sign text {
+  font:
+    900 92px Impact,
+    'Arial Black',
+    Georgia,
+    sans-serif;
+  letter-spacing: 3px;
+  stroke-linejoin: round;
+}
+.turn-sign-shadow {
+  fill: #3a1214;
+  stroke: #3a1214;
+  stroke-width: 22px;
+  transform: translate(0, 6px);
+}
+.turn-sign-text {
+  fill: #f2c94c;
+  stroke: #fffefa;
+  stroke-width: 7px;
+  paint-order: stroke fill;
+}
+@keyframes turn-sign {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) rotate(-4deg) scale(0.4);
+  }
+  15% {
+    opacity: 1;
+    transform: translate(-50%, -50%) rotate(-4deg) scale(1.12);
+  }
+  25% {
+    transform: translate(-50%, -50%) rotate(-4deg) scale(1);
+  }
+  75% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) rotate(-4deg) scale(1.05);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .turn-sign {
+    animation: turn-sign-still 2.2s forwards;
+  }
+  @keyframes turn-sign-still {
+    0%,
+    75% {
+      opacity: 1;
+    }
+    100% {
+      opacity: 0;
+    }
+  }
+}
+
+/* Em todos os jogos: a vez da pessoa é inconfundível */
+.turn-banner.my-turn {
+  background: #1f6b3a;
+  border: 3px solid #f2c94c;
+  text-align: center;
+  animation: banner-pulse 1.8s ease-in-out infinite;
+}
+.turn-banner.my-turn strong {
+  display: block;
+  font-size: 1.7rem;
+  line-height: 1.15;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: #f2c94c;
+}
+.turn-timer[data-mine='true'] .turn-timer-label {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 0.5rem;
+}
+.turn-timer[data-mine='true'] .turn-timer-seconds {
+  font-size: 2.4rem;
+  line-height: 1;
+  font-weight: 800;
+}
+@keyframes banner-pulse {
+  50% {
+    box-shadow: 0 0 0 0.45rem #f2c94c55;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .turn-banner.my-turn {
+    animation: none;
+  }
+}
+
+/* Tela de jogo (todos os jogos): só a mesa, menu de três risquinhos no canto */
+body:has(.game-screen) {
+  overflow: hidden;
+}
+body:has(.game-screen) #notice:not([hidden]) {
+  position: fixed;
+  inset: 0.5rem 0.5rem auto;
+  z-index: 95;
+  width: auto;
+  margin: 0;
+}
+.game-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: var(--paper);
+  max-width: none;
+  margin: 0;
+  padding: 0 max(0.8rem, calc((100vw - 62rem) / 2)) 1.5rem;
+  box-sizing: border-box;
+}
+.game-screen.dgame {
+  align-content: start;
+}
+.screen-bar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-height: 3.4rem;
+  padding: 0.4rem 0;
+  background: var(--paper);
+}
+.screen-bar h1 {
+  flex: 1;
+  margin: 0;
+  font-size: clamp(1.2rem, 4.5vw, 1.7rem);
+}
+.screen-bar .game-menu-button {
+  background: var(--green);
+  color: #fff;
+}
+.game-sheet .owner-tools {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+.game-sheet .owner-tools:empty,
+.game-sheet #menu-owner:empty {
+  display: none;
+}
+.game-screen .seat-info {
+  margin: 0.2rem 0 0.6rem;
+}
+.game-screen .turn-banner {
+  padding: 0.45rem 0.8rem;
+  margin-bottom: 0.4rem;
+}
+.game-screen .turn-banner.my-turn strong {
+  font-size: 1.25rem;
+}
+.game-screen .turn-timer {
+  margin: 0.2rem 0 0.4rem;
+}
+.game-screen .turn-timer[data-mine='true'] .turn-timer-seconds {
+  font-size: 1.8rem;
+}
+
+/* Truco: cartas lançadas em cruz, cada uma na direção de quem jogou */
+.truco-center {
+  width: 68%;
+  min-height: 12rem;
+}
+.truco-center .played-cards {
+  display: grid;
+  grid-template-columns: repeat(3, auto);
+  grid-template-rows: repeat(3, auto);
+  grid-template-areas: '. top .' 'left . right' '. bottom .';
+  gap: 0;
+  align-items: center;
+  justify-items: center;
+}
+.truco-center .played-cards > div {
+  display: block;
+}
+.truco-center .played-cards .playing-card {
+  width: clamp(2.7rem, 12vw, 3.6rem);
+}
+.truco-center .played-cards p {
+  display: none;
+}
+.played-cards .at-top {
+  grid-area: top;
+  transform: rotate(3deg);
+  margin-bottom: -1rem;
+}
+.played-cards .at-left {
+  grid-area: left;
+  transform: rotate(-8deg);
+  margin-right: -0.9rem;
+}
+.played-cards .at-right {
+  grid-area: right;
+  transform: rotate(8deg);
+  margin-left: -0.9rem;
+}
+.played-cards .at-bottom {
+  grid-area: bottom;
+  transform: rotate(-3deg);
+  margin-top: -1rem;
+}
+
+/* Tela de fim: jogar novamente e aumentar a dificuldade */
+.end-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 85;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: #141413cc;
+}
+.end-card {
+  width: min(100%, 24rem);
+  display: grid;
+  gap: 0.8rem;
+  padding: 1.6rem 1.2rem;
+  border-radius: 1.4rem;
+  background: var(--card);
+  color: var(--ink);
+  text-align: center;
+  box-shadow: 0 1rem 2.4rem #0000008c;
+}
+.end-card h2 {
+  margin: 0;
+  font-size: 1.8rem;
+}
+.end-card p {
+  margin: 0;
+}
+.end-card button,
+.end-home {
+  min-height: 3.2rem;
+  font-size: 1.05rem;
+}
+.end-stars {
+  font-size: 2rem;
+  color: #d9a21b;
+  letter-spacing: 0.4rem;
+}
+.end-home {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--green);
+  font-weight: 600;
+}
+
+/* Artefato: cada jogo com o clima da sua tela (dominó verde-água com madeira, cacheta verde escuro) */
+.game-screen.dgame {
+  background: radial-gradient(ellipse at 50% 40%, #2aa396, #17766c);
+  color: #fff;
+}
+.dgame .screen-bar {
+  background: #17766c;
+}
+.dgame .screen-bar h1,
+.dgame .table-ends,
+.dgame .last-action,
+.dgame .turn-timer-label {
+  color: #fff;
+}
+.dgame .screen-bar .tag {
+  background: #ffffff26;
+  color: #fff;
+}
+.dgame .hand-section {
+  background: linear-gradient(#7a5233, #5e3d24);
+  color: #fff;
+  border: 0;
+  box-shadow: 0 0.2rem 0.6rem #0006;
+}
+.dgame .hand-section h2,
+.dgame .hand-section .muted {
+  color: #fff;
+}
+.game-screen.game-cacheta {
+  background: #1c3a30;
+  color: #fff;
+}
+.game-cacheta .screen-bar {
+  background: #1c3a30;
+}
+.game-cacheta .screen-bar h1,
+.game-cacheta .turn-timer-label,
+.game-cacheta .fine {
+  color: #fff;
+}
+.game-cacheta .screen-bar .tag {
+  background: #ffffff26;
+  color: #fff;
+}
+.game-cacheta .hand-section,
+.game-cacheta .card:not(.result-card) {
   background: #141413;
   color: #fff;
-  border-radius: 1.2rem;
+  border-color: #ffffff22;
 }
-.truco-hand h2 {
+.game-cacheta .hand-section h2,
+.game-cacheta .card h2,
+.game-cacheta .card h3 {
   color: #fff;
-  font-size: 1rem;
+}
+.game-cacheta .player-card {
+  background: #ffffff14;
+  border-color: #ffffff33;
+  color: #fff;
+}
+.game-cacheta .player-card small,
+.game-cacheta .player-card strong {
+  color: #fff;
+}
+.game-screen.dgame .player-card,
+.dgame .dseat {
+  color: #fff;
+}
+
+/* Sem barra no alto: só o botão do menu flutua no canto */
+.game-screen .screen-bar {
+  position: fixed;
+  top: 0.5rem;
+  right: 0.6rem;
+  z-index: 60;
+  display: block;
+  min-height: 0;
+  padding: 0;
+  background: transparent;
+}
+.game-screen {
+  padding-top: 3.6rem;
+}
+.sheet-info {
+  margin: 0.2rem 0.8rem 0.4rem;
+  padding-bottom: 0.4rem;
+  border-bottom: 1px solid #d8ddd3;
+  color: #58675e;
+  font-size: 0.85rem;
+}
+
+/* Responsividade: a mesa ocupa o espaço que sobra, em qualquer tamanho de tela */
+
+/* Dominó: a mesa cresce com a altura da tela e a mão fica embaixo */
+.game-screen.dgame {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-height: 100dvh;
+  max-width: none;
+}
+.game-screen.dgame > * {
+  flex: none;
+}
+.game-screen.dgame .dtable {
+  flex: 1 1 auto;
+  min-height: clamp(9rem, 36dvh, 32rem);
+  grid-template-rows: auto minmax(0, 1fr);
+}
+.game-screen.dgame .dtable[data-players='3'] {
+  grid-template-rows: minmax(0, 1fr) auto;
+}
+.game-screen.dgame .dtable[data-players='2'] {
+  grid-template-rows: auto minmax(0, 1fr);
+}
+.game-screen.dgame .d-board-wrap {
+  min-height: 0;
+  height: 100%;
+}
+.game-screen.dgame .d-board-wrap .board {
+  min-height: 0;
+  max-height: 100%;
+}
+.game-screen.dgame .d-board-wrap .board .tile {
+  width: clamp(2.7rem, min(11vw, 9dvh), 6.5rem);
+}
+.game-screen.dgame .tile-button .tile {
+  width: clamp(2.6rem, min(10.5vw, 7.5dvh), 4.6rem);
+}
+.game-screen.dgame .hand-section {
+  margin-top: auto;
+}
+.game-screen.dgame .hand {
+  flex-wrap: wrap;
+}
+
+/* Telas largas e altas: o conteúdo central cresce em vez de ficar uma faixa fina */
+@media (min-width: 1100px) {
+  .game-screen {
+    padding-inline: max(1rem, calc((100vw - 78rem) / 2));
+  }
+}
+
+/* Truco no celular deitado, tablet deitado, notebook e monitor:
+   mesa grande à esquerda e as cartas num painel à direita. */
+@media (min-aspect-ratio: 11/10) {
+  .truco-screen {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) clamp(12rem, 30vw, 22rem);
+    grid-template-rows: auto auto minmax(0, 1fr);
+    grid-template-areas:
+      'top status dock'
+      'top timer dock'
+      'stage stage dock';
+    column-gap: 0.6rem;
+    row-gap: 0.3rem;
+    padding: 0.5rem 0 0.5rem 0.6rem;
+  }
+  .truco-top {
+    grid-area: top;
+    gap: 0.6rem;
+    align-items: center;
+  }
+  .truco-status {
+    grid-area: status;
+    align-self: end;
+    font-size: 1rem;
+    min-height: 0;
+  }
+  .truco-status.my-turn {
+    font-size: 1.2rem;
+  }
+  .truco-screen .turn-timer {
+    grid-area: timer;
+    align-self: start;
+    margin: 0;
+  }
+  .truco-screen .turn-timer[data-mine='true'] .turn-timer-seconds {
+    font-size: 1.5rem;
+  }
+  .truco-screen .turn-timer-label {
+    margin: 0;
+  }
+  .truco-stage {
+    grid-area: stage;
+  }
+  .truco-dock {
+    grid-area: dock;
+    margin: -0.5rem 0 -0.5rem 0;
+    padding: 0.8rem 0.8rem calc(0.8rem + env(safe-area-inset-bottom));
+    border-radius: 1.3rem 0 0 1.3rem;
+    justify-content: center;
+    gap: 0.7rem;
+    overflow-y: auto;
+  }
+  .truco-call {
+    position: static;
+    width: 100%;
+    order: -1;
+  }
+  .truco-dock .card-hand {
+    width: 100%;
+    gap: 0.4rem;
+    min-height: 0;
+  }
+  .truco-dock .card-button {
+    flex: 1 1 0;
+    min-width: 0;
+    max-width: 7rem;
+  }
+  .truco-dock .playing-card {
+    width: 100%;
+  }
+  .truco-dock .card-button.picked {
+    transform: translateY(-0.6rem);
+  }
+  .truco-screen .truco-felt {
+    border-radius: 2.2rem;
+  }
+  .truco-center {
+    width: 46%;
+    min-height: 60%;
+  }
+  .truco-center .played-cards .playing-card {
+    width: clamp(2.7rem, min(9vw, 13dvh), 6.5rem);
+  }
+  .truco-seat .avatar,
+  .player-card.truco-seat .avatar {
+    width: clamp(2.4rem, 9dvh, 4.2rem);
+    height: clamp(2.4rem, 9dvh, 4.2rem);
+  }
+  .truco-screen .truco-felt .vira .playing-card {
+    width: clamp(2.2rem, 7dvh, 3.6rem);
+  }
+}
+
+/* Truco em pé, mas em tela grande (tablet): mesa mais alta e cartas maiores */
+@media (min-width: 760px) and (max-aspect-ratio: 11/10) {
+  .truco-dock .playing-card {
+    width: clamp(5rem, 14vw, 8rem);
+  }
+  .truco-center .played-cards .playing-card {
+    width: clamp(4rem, 11vw, 6.5rem);
+  }
+  .truco-seat .avatar,
+  .player-card.truco-seat .avatar {
+    width: 4.2rem;
+    height: 4.2rem;
+  }
+}
+
+/* Telas muito estreitas (320 px): menos folga nas laterais */
+@media (max-width: 340px) {
+  .game-screen {
+    padding-inline: 0.5rem;
+  }
+  .truco-dock .card-hand {
+    gap: 0.35rem;
+  }
+  .truco-dock .playing-card {
+    width: clamp(3.8rem, 23vw, 4.6rem);
+  }
+  .score-grid {
+    grid-template-columns: 2.1rem repeat(3, 2.3rem);
+  }
+}
+.truco-status.my-turn {
+  width: fit-content;
+  max-width: 100%;
+  margin-inline: auto;
+}
+
+/* Dominó compacto: telas baixas (celular em pé, notebook pequeno) deixam mais espaço para a mesa */
+@media (max-height: 860px) {
+  .game-screen.dgame {
+    gap: 0.3rem;
+    padding-top: 0.6rem;
+  }
+  .game-screen.dgame .turn-banner {
+    padding: 0.3rem 0.6rem;
+    margin: 0;
+  }
+  .game-screen.dgame .turn-banner span,
+  .game-screen.dgame .table-ends {
+    display: none;
+  }
+  .game-screen.dgame .turn-banner strong,
+  .game-screen.dgame .turn-banner.my-turn strong {
+    font-size: 1.05rem;
+  }
+  .game-screen.dgame .turn-timer {
+    margin: 0;
+  }
+  .game-screen.dgame .turn-timer-label {
+    margin: 0 0 0.1rem;
+  }
+  .game-screen.dgame .turn-timer[data-mine='true'] .turn-timer-seconds {
+    font-size: 1.3rem;
+  }
+  .game-screen.dgame .turn-timer-track {
+    height: 0.5rem;
+  }
+  .game-screen.dgame .dtable[data-players='2'] .d-seat {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    max-width: none;
+    width: auto;
+    padding: 0.3rem 0.8rem;
+  }
+  .game-screen.dgame .last-action {
+    font-size: 0.85rem;
+  }
+  .game-screen.dgame .hand-section {
+    padding: 0.5rem 0.6rem;
+  }
+  .game-screen.dgame .hand-section .section-heading {
+    margin-bottom: 0;
+  }
+  .game-screen.dgame .hand {
+    padding: 0.3rem 0 0.1rem;
+  }
 }
 @media (max-width: 700px) {
-  .truco-felt {
-    min-height: 17rem;
+  .game-screen.dgame .hand {
+    gap: 0.25rem;
   }
-  .truco-felt .played-cards .playing-card {
-    width: 3.6rem;
+  .game-screen.dgame .tile-button .tile {
+    width: clamp(2.2rem, calc((100vw - 3.6rem) / 7.4), 4.2rem);
   }
 }
-.truco-seat .avatar,
-.player-card.truco-seat .avatar {
-  display: inline-flex;
-  width: 3.2rem;
-  height: 3.2rem;
-  border: 3px solid #fffefa;
+
+/* O botão do menu flutua no canto: a faixa de "sua vez" não passa por baixo dele */
+.game-screen.dgame .turn-banner,
+.game-cacheta .turn-banner {
+  margin-right: 3.4rem;
+}
+
+/* Celular deitado: painel das cartas mais largo e sem textos de apoio */
+@media (min-aspect-ratio: 11/10) and (max-height: 480px) {
+  .truco-screen {
+    grid-template-columns: auto minmax(0, 1fr) clamp(13rem, 40vw, 20rem);
+  }
+  .truco-hint {
+    display: none;
+  }
+  .truco-call {
+    min-height: 2.4rem;
+  }
+  .truco-seat .avatar,
+  .player-card.truco-seat .avatar {
+    width: 2.2rem;
+    height: 2.2rem;
+  }
+}
+
+/* Celular pequeno em pé: mais espaço para a mesa do Truco */
+@media (max-aspect-ratio: 11/10) and (max-height: 700px) {
+  .truco-status.my-turn {
+    font-size: 1.2rem;
+  }
+  .truco-screen .turn-timer[data-mine='true'] .turn-timer-seconds {
+    font-size: 1.8rem;
+  }
+  .truco-screen .truco-felt .seat-me {
+    bottom: 0.3rem;
+  }
+  .truco-call {
+    top: -2.8rem;
+    min-height: 2.3rem;
+    padding: 0 1rem;
+  }
+  .truco-dock .card-hand {
+    min-height: 5.6rem;
+  }
+}
+@media (min-aspect-ratio: 11/10) {
+  .truco-screen .turn-timer-label,
+  .truco-screen .turn-timer[data-mine='true'] .turn-timer-label {
+    white-space: nowrap;
+    font-size: 0.8rem;
+    gap: 0.35rem;
+  }
+  .truco-dock .card-button {
+    max-width: min(7rem, calc((100dvh - 9rem) / 1.4));
+  }
+}
+@media (min-aspect-ratio: 11/10) and (max-height: 480px) {
+  .truco-slot:has(.truco-hint) {
+    display: none;
+  }
+}
+@media (max-width: 700px) {
+  .game-screen .turn-banner.my-turn strong {
+    font-size: 1.05rem;
+  }
 }

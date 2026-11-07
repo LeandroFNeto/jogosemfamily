@@ -268,10 +268,9 @@ test('mesa com amigos: link wa.me, entrada sem aprovação, contato favorito e i
   await bot.say(BIA, 'Bia');
   await bot.app.whatsapp.idle();
   const anaView = bot.fake.take(ANA).join(NL);
-  assert.match(anaView, /A partida de \*Dominó\* começou/);
+  assert.equal(anaView, '', 'o dono não recebe aviso automático do jogo');
   const anaLink = /http:\/\/web\.test\/m\/([\w-]{43})/.exec(joined)?.[1];
   assert.ok(anaLink, 'o dono recebe o link da web ao criar a mesa');
-  assert.doesNotMatch(anaView, /\/m\//, 'o link não é reenviado ao começar');
   const owner = bot.app.store.db
     .prepare(
       "SELECT data FROM profiles WHERE json_extract(data,'$.name') = 'Ana'"
@@ -333,9 +332,8 @@ test('sair deixa um bot no lugar, o retorno reassume e só o dono encerra', asyn
   await bot.say(BIA, 'sair');
   const left = await bot.say(BIA, 'sim');
   assert.match(left.join(NL), /bot assumiu o seu lugar/);
-  assert.match(bot.fake.take(ANA).join(NL), /Bia saiu/);
-  const back = (await bot.say(BIA, 'jogo')).join(NL);
-  assert.match(back, /Bia voltou à mesa/);
+  assert.doesNotMatch(bot.fake.take(ANA).join(NL), /Bia saiu/);
+  await bot.say(BIA, 'jogo');
   assert.match(
     lastOf(await bot.say(BIA, 'encerrar')),
     /Só quem criou a mesa pode encerrá-la/
@@ -348,7 +346,7 @@ test('sair deixa um bot no lugar, o retorno reassume e só o dono encerra', asyn
   assert.match(lastOf(await bot.say(ANA, 'não')), /mesa continua/);
   await bot.say(ANA, 'encerrar');
   await bot.say(ANA, 'sim');
-  assert.match(bot.fake.take(BIA).join(NL), /mesa foi encerrada/);
+  assert.doesNotMatch(bot.fake.take(BIA).join(NL), /mesa foi encerrada/);
   assert.match(
     lastOf(await bot.say(ANA, 'estado')),
     /não tem partida em andamento/
@@ -373,7 +371,10 @@ test('dono retira um jogador pelo WhatsApp e ele recebe o aviso', async (t) => {
   assert.match(lastOf(await bot.say(ANA, 'retirar')), /Quem você quer retirar/);
   assert.match(lastOf(await bot.say(ANA, '1')), /Retirar \*Bia\*/);
   assert.match(lastOf(await bot.say(ANA, 'sim')), /Bia foi retirado/);
-  assert.match(bot.fake.take(BIA).join(NL), /retirou você desta partida/);
+  assert.doesNotMatch(
+    bot.fake.take(BIA).join(NL),
+    /retirou você desta partida/
+  );
   assert.match(
     lastOf(await bot.say(BIA, `ENTRAR ${code}`)),
     /retirou você|não é mais válido|inválido/i

@@ -118,9 +118,12 @@ test('sair deixa um bot no lugar, o dono retira jogadores e só ele encerra', as
     await expect(guest.locator('.hand .tile-button')).toHaveCount(7);
     // Quem não é dono não vê as ferramentas do dono.
     await expect(guest.locator('#close-room')).toHaveCount(0);
+    await host.getByRole('button', { name: 'Abrir menu' }).click();
     await expect(host.locator('#close-room')).toBeVisible();
+    await host.getByRole('button', { name: 'Abrir menu' }).click();
 
     // Maria sai: um bot assume e a mesa de João continua.
+    await guest.getByRole('button', { name: 'Abrir menu' }).click();
     await guest
       .getByRole('button', { name: 'Sair (um bot assume)', exact: true })
       .click();
@@ -139,6 +142,7 @@ test('sair deixa um bot no lugar, o dono retira jogadores e só ele encerra', as
 
     // João retira Maria: ela é avisada e não volta.
     host.once('dialog', (dialog) => dialog.accept());
+    await host.getByRole('button', { name: 'Abrir menu' }).click();
     await host.getByRole('button', { name: 'Retirar jogador' }).click();
     await host.getByRole('button', { name: 'Retirar', exact: true }).click();
     await expect(
@@ -147,6 +151,7 @@ test('sair deixa um bot no lugar, o dono retira jogadores e só ele encerra', as
     await expect(host.locator('.seat-info')).toContainText('retirado');
 
     // Só o dono encerra.
+    await host.getByRole('button', { name: 'Abrir menu' }).click();
     await host.getByRole('button', { name: 'Encerrar mesa' }).click();
     await host
       .getByRole('button', { name: 'Sim, encerrar para todos' })

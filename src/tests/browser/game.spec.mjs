@@ -191,7 +191,8 @@ test('mesa cabe no celular com fonte extra grande e mantém navegação por tecl
       fullPage: true,
     });
     await guest.setViewportSize({ width: 360, height: 800 });
-    await guest.getByRole('button', { name: /Acessibilidade/ }).click();
+    await guest.getByRole('button', { name: 'Abrir menu' }).click();
+    await guest.locator('#game-access').click();
     await guest.getByLabel('Tamanho da letra').selectOption('extra');
     await guest.getByLabel('Alto contraste').check();
     await guest.getByRole('button', { name: 'Salvar preferências' }).click();
@@ -221,7 +222,8 @@ test('mesa cabe no celular com fonte extra grande e mantém navegação por tecl
         elements.map((element) => element.getBoundingClientRect().height)
       );
     expect(controls.every((height) => height >= 44)).toBe(true);
-    await guest.getByRole('button', { name: 'Preciso de ajuda' }).focus();
+    await guest.getByRole('button', { name: 'Abrir menu' }).click();
+    await guest.locator('#game-help').focus();
     await guest.keyboard.press('Enter');
     await expect(guest.getByRole('dialog')).toBeVisible();
     await guest.keyboard.press('Escape');

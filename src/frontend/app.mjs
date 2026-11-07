@@ -5,6 +5,10 @@ import {
   tileMarkup,
   openDialog,
   showHelp,
+  turnSign,
+  screenBar,
+  gameSheet,
+  bindGameMenu,
 } from '/components.mjs';
 import { applyPreferences, showAccessibility, speak } from '/accessibility.mjs';
 import { readPhoto, showFamilyPanel } from '/family-panel.mjs';
@@ -561,8 +565,9 @@ function renderPlaying() {
     .join('');
   const leftEnd = game.board.length ? game.board[0].a : '';
   const rightEnd = game.board.length ? game.board.at(-1).b : '';
-  setContent(`<section class="game-page dgame">
-    <div class="d-bar game-top"><h1>Dominó <span class="tag">${room.turn ? `${room.turnSeconds} s por jogada` : 'Sem pressa'}</span></h1><span class="d-score" aria-label="Seus pontos">${game.score[me.id].points} pt</span></div>
+  setContent(`<section class="game-page dgame game-screen">
+    ${screenBar({ title: 'Dominó' })}
+    ${gameSheet({ connected, readId: 'read-hand', readLabel: 'Ler minhas peças em voz alta', info: `<strong>Dominó</strong> · ${room.turn ? `${room.turnSeconds} s por jogada` : 'Sem pressa'} · ${game.score[me.id].points} pt` })}
     <div id="turn-status" tabindex="-1" class="turn-banner${myTurn ? ' my-turn' : ''}" role="status" aria-live="polite"><strong>${e(status)}</strong><span>${game.status === 'FINISHED' ? `Pontos nesta rodada: ${game.result.points}. ${game.result.reason === 'blocked' ? 'A mesa ficou fechada.' : 'Todas as peças foram jogadas.'}` : myTurn ? 'Toque numa peça ou arraste até a mesa.' : 'Aguarde a sua vez.'}</span></div>
     <div class="dtable" data-players="${order.length}">${seats}
       <section class="table d-board-wrap" aria-label="Peças na mesa">
@@ -595,12 +600,19 @@ function renderPlaying() {
       ${myTurn && !hasMove ? `<div class="draw-row"><p>Nenhuma peça encaixa agora.</p><button id="draw-pass" class="primary">${game.stockCount ? 'Comprar uma peça' : 'Passar a vez'}</button></div>` : ''}
     </section>`
     }
-    <div class="game-bottom"><span class="connection">${connected ? '● Mesa conectada' : 'Reconectando…'}</span><button id="read-hand" class="quiet">Ler minhas peças em voz alta</button><button id="game-help" class="quiet">Preciso de ajuda</button><button id="leave-room" class="quiet">Sair (um bot assume)</button></div>
   </section>`);
   setupBoardPan();
   setupDrag(game, playable, (tileId, side) =>
     perform(() => sendAction({ type: 'play', tileId, side }))
   );
+  if (myTurn && game.status === 'PLAYING')
+    document
+      .querySelector('.game-page')
+      ?.insertAdjacentHTML(
+        'beforeend',
+        turnSign(`${room.id}:${room.revision}`, true)
+      );
+  bindGameMenu();
   document.querySelector('#leave-room').onclick = confirmLeave;
   document.querySelector('#game-help').onclick = showHelp;
   document.querySelector('#read-hand').onclick = () => {
@@ -726,7 +738,7 @@ function mountSeatInfo() {
   info.className = 'seat-info';
   info.setAttribute('role', 'status');
   info.innerHTML = notes.map((note) => `<p>${note}</p>`).join('');
-  if (notes.length) page.querySelector('.game-top')?.after(info);
+  if (notes.length) page.querySelector('.screen-bar, .truco-top')?.after(info);
   if (room.ownerId === me.id && room.status === 'PLAYING') {
     const tools = document.createElement('div');
     tools.className = 'owner-tools';
@@ -735,7 +747,7 @@ function mountSeatInfo() {
         !player.bot && player.id !== me.id && player.seat !== 'removed'
     );
     tools.innerHTML = `${others ? '<button id="manage-players" class="quiet">Retirar jogador</button>' : ''}<button id="close-room" class="quiet">Encerrar mesa</button>`;
-    page.querySelector('.game-top')?.append(tools);
+    page.querySelector('#menu-owner')?.append(tools);
     tools
       .querySelector('#manage-players')
       ?.addEventListener('click', manageDialog);
@@ -783,9 +795,12 @@ function renderRoom() {
         perform,
         onAction: sendAction,
         onLeave: confirmLeave,
-        onRematch: async () => {
+        // Depois de um redesenho só local (ex.: escolher carta), recoloca relógio e avisos.
+        onRedraw: mountExtras,
+        onRematch: async (extra = {}) => {
           room = await api(`/rooms/${room.id}/rematch`, 'POST', {
             revision: room.revision,
+            ...extra,
           });
           renderRoom();
         },
@@ -796,9 +811,14 @@ function renderRoom() {
       }
     }
   } else renderWaiting();
+  mountExtras();
+}
+
+function mountExtras() {
   const page = main.querySelector('.game-page');
   if (page && room.game && room.approved)
     mountTurnTimer({ room, me, container: page, receivedAt: room.receivedAt });
+  main.querySelector('.seat-info')?.remove();
   mountSeatInfo();
 }
 

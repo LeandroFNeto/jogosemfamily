@@ -178,7 +178,10 @@ test('chamado a quem não aceitou só entrega depois do Sim', async (t) => {
   assert.match(after, /Ana quer jogar \*Truco paulista\*\. Entrar\?/);
   assert.equal(ctx.favorites.get(ana.id, caio.id).state, 'accepted');
   assert.equal(ctx.favorites.get(ana.id, caio.id).call_payload, null);
-  assert.match(ctx.bot.fake.take(NUMBERS.Ana).join('\n'), /Caio aceitou/);
+  assert.doesNotMatch(
+    ctx.bot.fake.take(NUMBERS.Ana).join('\n'),
+    /Caio aceitou/
+  );
   assert.ok(room.id);
 });
 

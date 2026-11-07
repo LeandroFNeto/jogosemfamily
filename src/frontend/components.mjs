@@ -95,3 +95,56 @@ export function showHelp(gameId = 'domino') {
     <div class="safety"><strong>Um convite seguro</strong><p>Confira o nome e a foto de quem convidou. Se tiver dúvida, fale com o familiar antes de entrar. Nunca pedimos pagamento ou dados bancários.</p></div>`
   );
 }
+
+// Letreiro grande "SUA VEZ": aparece uma vez a cada nova vez (não a cada redesenho).
+let signShown = '';
+export function turnSign(key, active) {
+  if (!active) return '';
+  if (signShown === key) return '';
+  signShown = key;
+  return '<div class="turn-sign" aria-hidden="true"><svg viewBox="0 0 320 120"><text x="160" y="88" text-anchor="middle" class="turn-sign-shadow">SUA VEZ</text><text x="160" y="88" text-anchor="middle" class="turn-sign-text">SUA VEZ</text></svg></div>';
+}
+
+// Menu de três risquinhos, igual em todos os jogos: tudo fora da mesa fica aqui.
+const MENU_ICON =
+  '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>';
+
+export const menuButton = () =>
+  `<button id="game-menu" class="game-menu-button" type="button" aria-label="Abrir menu" aria-haspopup="true" aria-expanded="false" aria-controls="game-menu-sheet">${MENU_ICON}</button>`;
+
+export function gameSheet({ connected, readId, readLabel, info = '' }) {
+  return `<div id="game-menu-sheet" class="game-sheet" hidden>${info ? `<p class="sheet-info">${info}</p>` : ''}
+      <a href="/">Ir para o início</a>
+      <button id="${readId}" type="button">${readLabel}</button>
+      <button id="game-help" type="button">Como jogar</button>
+      <button id="game-access" type="button">Acessibilidade</button>
+      <button id="game-family" type="button">Painel do familiar</button>
+      <div id="menu-owner"></div>
+      <button id="leave-room" type="button">Sair (um bot assume)</button>
+      <p class="connection">${connected ? '● Mesa conectada' : 'Reconectando…'}</p>
+    </div>`;
+}
+
+// Só o botão do menu flutua no canto; o nome do jogo fica para leitores de tela.
+export function screenBar({ title }) {
+  return `<header class="screen-bar"><h1 class="visually-hidden">${title}</h1>${menuButton()}</header>`;
+}
+
+export function bindGameMenu() {
+  const menu = document.querySelector('#game-menu');
+  const sheet = document.querySelector('#game-menu-sheet');
+  if (!menu || !sheet) return;
+  const toggle = (open) => {
+    sheet.hidden = !open;
+    menu.setAttribute('aria-expanded', String(open));
+  };
+  menu.onclick = () => toggle(sheet.hidden);
+  sheet.addEventListener('click', (event) => {
+    if (event.target.closest('a, button')) toggle(false);
+  });
+  const press = (id) => () => document.querySelector(id)?.click();
+  document.querySelector('#game-access').onclick = press(
+    '#accessibility-button'
+  );
+  document.querySelector('#game-family').onclick = press('#family-button');
+}

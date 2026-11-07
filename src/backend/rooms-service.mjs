@@ -29,6 +29,8 @@ export function createRoomsService({
   isOnline = () => false,
   images = createImageService(),
   fillAfterMs = FILL_AFTER,
+  // Pausa antes de cada jogada de bot (0 = instantâneo, usado nos testes).
+  botDelayMs = 0,
 }) {
   const listeners = new Set();
   const favorites = createFavorites(store, now);
@@ -201,13 +203,22 @@ export function createRoomsService({
         continue;
       }
       const humans = room.playerIds.filter((p) => !room.botIds.includes(p));
-      if (!humans.some((p) => isPresent(room, p))) cancelInactive(room);
+      // Só bots jogando (todas as pessoas saíram ou foram retiradas): encerra já.
+      if (!presentHumans(room).length) cancelInactive(room);
+      else if (!humans.some((p) => isPresent(room, p))) cancelInactive(room);
       else if (expired(room)) {
         try {
           autoPlay(room);
         } catch (error) {
           room.turn = null;
           console.error('Falha na jogada automática:', error.message);
+        }
+      } else if (room.botAt && now() >= room.botAt) {
+        try {
+          playDueBot(room);
+        } catch (error) {
+          room.botAt = null;
+          console.error('Falha na jogada do bot:', error.message);
         }
       } else continue;
       save(room);
@@ -231,33 +242,54 @@ export function createRoomsService({
     return changed;
   }
 
+  const botActor = (room) => {
+    const id =
+      room.game.decisionPlayerId ||
+      room.game.pendingRaise?.responderId ||
+      room.game.currentPlayerId;
+    return id && botSeat(room, id) ? id : null;
+  };
+
+  // Uma jogada de bot; devolve false quando não há o que jogar.
+  function playBot(room, engine) {
+    const id = botActor(room);
+    if (!id) return false;
+    const action = chooseBotAction(
+      room.gameId,
+      room.game,
+      id,
+      room.difficulty ?? 'medium'
+    );
+    if (!action) return false;
+    room.game = engine.processAction(room.game, id, action);
+    const seat = seatOf(room, id);
+    if (seat && !room.botIds.includes(id)) seat.moves = (seat.moves ?? 0) + 1;
+    return true;
+  }
+
+  // Com pausa, os bots jogam um de cada vez (a varredura chama playDueBot);
+  // sem pausa, todos jogam de uma vez.
   function advanceBots(room) {
     if (!room.game || room.game.status !== 'PLAYING') return;
     // Sem nenhuma pessoa na mesa o jogo espera (e a inatividade cancela).
     if (!presentHumans(room).length) return;
     const engine = getGameEngine(room.gameId);
-    for (
-      let count = 0;
-      count < 128 && room.game.status === 'PLAYING';
-      count++
-    ) {
-      const id =
-        room.game.decisionPlayerId ||
-        room.game.pendingRaise?.responderId ||
-        room.game.currentPlayerId;
-      if (!id || !botSeat(room, id)) break;
-      const action = chooseBotAction(
-        room.gameId,
-        room.game,
-        id,
-        room.difficulty ?? 'medium'
-      );
-      if (!action) break;
-      room.game = engine.processAction(room.game, id, action);
-      const seat = seatOf(room, id);
-      if (seat && !room.botIds.includes(id)) seat.moves = (seat.moves ?? 0) + 1;
+    if (botDelayMs > 0) {
+      room.botAt = botActor(room) ? (room.botAt ?? now() + botDelayMs) : null;
+      room.status = room.game.status;
+      return;
     }
+    for (let count = 0; count < 128 && room.game.status === 'PLAYING'; count++)
+      if (!playBot(room, engine)) break;
     room.status = room.game.status;
+  }
+
+  // Joga a vez de um bot cuja pausa terminou e agenda o próximo.
+  function playDueBot(room) {
+    room.botAt = null;
+    if (!room.game || room.game.status !== 'PLAYING') return;
+    playBot(room, getGameEngine(room.gameId));
+    advanceBots(room);
   }
 
   function roomFor(id, playerId) {
@@ -613,6 +645,30 @@ export function createRoomsService({
     return room;
   }
 
+  // Sobe o nível da próxima rodada (nunca desce) e guarda para quando a revanche começar.
+  function harder(room, level) {
+    requireValue(
+      ['wordsearch', 'puzzle'].includes(room.gameId) &&
+        IMAGE_LEVELS.includes(level),
+      'Este jogo não tem níveis de dificuldade.'
+    );
+    const current = room.gameOptions.level ?? 'easy';
+    requireValue(
+      IMAGE_LEVELS.indexOf(level) > IMAGE_LEVELS.indexOf(current),
+      'Escolha uma dificuldade maior que a atual.'
+    );
+    room.gameOptions = { ...room.gameOptions, level };
+    if (room.gameId === 'puzzle') {
+      const chosen = room.gameOptions.imageId ? images.choose(level) : null;
+      room.gameOptions.size = LEVEL_SIZE[level];
+      if (chosen) {
+        room.gameOptions.image = chosen.url;
+        room.gameOptions.imageId = chosen.id;
+      }
+    }
+    room.nextLevel = level;
+  }
+
   function act(room, me, operation, body) {
     requireValue(
       room.playerIds.includes(me.id) && room.game,
@@ -646,6 +702,8 @@ export function createRoomsService({
       room.notice = null;
       room.turn = null;
     } else {
+      // "Aumentar dificuldade": só caça-palavras e quebra-cabeça têm níveis.
+      if (body.level) harder(room, body.level);
       room.game = engine.requestRematch(room.game, me.id);
       room.turn = null;
       for (const id of room.playerIds)
@@ -656,7 +714,17 @@ export function createRoomsService({
         )
           room.game = engine.requestRematch(room.game, id);
       // Revanche iniciada: nova rodada, com resultado próprio no ranking.
-      if (room.game.status !== 'FINISHED') room.round = (room.round ?? 1) + 1;
+      if (room.game.status !== 'FINISHED') {
+        room.round = (room.round ?? 1) + 1;
+        if (room.nextLevel) {
+          room.game = engine.createGame(
+            room.playerIds,
+            room.game.score,
+            room.gameOptions
+          );
+          room.nextLevel = null;
+        }
+      }
     }
     advanceBots(room);
     room.status = room.game.status;

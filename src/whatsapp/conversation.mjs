@@ -7,7 +7,6 @@ import { DECLINE_WAIT, MAX_RECIPIENTS } from '../backend/favorites.mjs';
 
 const DAY_MS = 86400000;
 const CANCELLED = 'A partida foi cancelada: faltaram jogadores.';
-const LAST_WARNING_MS = 15000;
 
 const plain = (value) =>
   String(value ?? '')
@@ -86,8 +85,6 @@ export function createConversation({
   log = console,
 }) {
   const pendingRooms = new Set();
-  // Lembretes de tempo por mesa: ligados à revisão, descartados quando ela muda.
-  const reminders = new Map();
   const gameName = (id) =>
     gameCatalog.find((game) => game.id === id)?.name ?? id;
 
@@ -257,43 +254,34 @@ export function createConversation({
       names.join(', '),
       room.ownerId === meId
         ? 'Digite *convite* para gerar o convite de novo.'
-        : 'Eu aviso quando começar.',
+        : 'A partida começa na web quando a mesa encher.',
     ].join('\n');
   }
 
-  // O jogo acontece na web: aqui só avisamos início, nova rodada, fim e link.
+  // O jogo acontece na web: o WhatsApp só avisa o início (com o link). Tempo,
+  // avisos de mesa, nova rodada e fim de partida ficam só na web; o link e o
+  // resultado voltam apenas quando a pessoa pede (*jogo*).
   function sendView(room, profileId, { force = false, again = false } = {}) {
     const profile = store.getProfile(profileId);
     if (!profile || profile.bot) return;
     const snapshot = rooms.snapshot(room, profileId);
     if (!snapshot.game) return;
-    scheduleReminders(room, profileId, snapshot);
     const convo = load(profile);
     const finished = snapshot.game.status === 'FINISHED';
     const phase = finished ? `end:${room.round ?? 1}` : 'play';
     const first = convo.startedRoom !== room.id;
-    // Avisos de mesa (saiu, voltou, retirado, novo dono, jogada automática).
-    const notice = snapshot.notice;
-    let noticeAt = convo.noticeAt;
-    if (notice?.text && notice.at !== noticeAt) {
-      send(profileId, notice.text);
-      noticeAt = notice.at;
-    }
-    if (!force && !first && convo.notified === phase) {
-      if (noticeAt !== convo.noticeAt) persist(profile, { ...convo, noticeAt });
-      return;
-    }
+    if (!force && !first) return;
     persist(profile, {
       ...convo,
       state: 'IN_ROOM',
       roomId: room.id,
       startedRoom: room.id,
       notified: phase,
-      noticeAt,
     });
     const name = gameName(room.gameId);
     if (finished) {
-      const result = `${resultLine(room)}\nDigite *revanche* para jogar de novo ou *menu* para outro jogo.`;
+      const result = `${resultLine(room)}
+Digite *revanche* para jogar de novo ou *menu* para outro jogo.`;
       if (!again) return send(profileId, result);
       return sendWebLink(profileId, room, result, { again });
     }
@@ -308,57 +296,13 @@ export function createConversation({
     });
   }
 
-  // No máximo dois lembretes ao jogador da vez: metade do tempo e últimos 15 s.
-  function scheduleReminders(room, profileId, snapshot) {
-    const turn = snapshot.turn;
-    if (turn?.playerId !== profileId || room.status !== 'PLAYING') return;
-    const remaining = turn.deadline - snapshot.serverNow;
-    const items = [];
-    const half = turn.seconds * 500;
-    if (half > LAST_WARNING_MS + 2000 && remaining > half)
-      items.push({ at: now() + remaining - half, kind: 'half' });
-    if (remaining > LAST_WARNING_MS)
-      items.push({ at: now() + remaining - LAST_WARNING_MS, kind: 'last' });
-    if (items.length)
-      reminders.set(room.id, {
-        playerId: profileId,
-        revision: room.revision,
-        deadline: now() + remaining,
-        items,
-      });
-  }
-
-  // Chamado a cada segundo: envia os lembretes vencidos que ainda valem.
-  function tick() {
-    for (const [roomId, entry] of reminders) {
-      const room = store.getRoom(roomId);
-      if (
-        !room ||
-        room.status !== 'PLAYING' ||
-        room.revision !== entry.revision
-      ) {
-        reminders.delete(roomId);
-        continue;
-      }
-      const due = entry.items.filter((item) => item.at <= now());
-      if (!due.length) continue;
-      entry.items = entry.items.filter((item) => item.at > now());
-      const kind = due.at(-1).kind;
-      const left = Math.max(0, Math.ceil((entry.deadline - now()) / 1000));
-      const text =
-        kind === 'half'
-          ? `Faltam ${left} s para a sua jogada.`
-          : 'Últimos 15 segundos. Jogue ou eu jogo por você.';
-      sendWebLink(entry.playerId, room, text, { plain: text });
-      if (!entry.items.length) reminders.delete(roomId);
-    }
-  }
+  // Lembretes de tempo deixaram o WhatsApp: o cronômetro é avisado na web.
+  function tick() {}
 
   function flush() {
     const ids = [...pendingRooms];
     pendingRooms.clear();
     for (const id of ids) {
-      reminders.delete(id);
       const room = rooms.normalizeRoom(store.getRoom(id));
       if (!room) continue;
       for (const playerId of room.playerIds) {
@@ -367,7 +311,7 @@ export function createConversation({
           if (room.status === 'CLOSED') closedFor(room, playerId);
           else if (seat === 'removed') removedFor(room, playerId);
           else if (seat === 'away') continue;
-          else if (room.game) sendView(room, playerId);
+          // Partida iniciada: nenhuma notificação automática no WhatsApp.
         } catch (error) {
           log.error?.('Falha ao avisar jogador:', error.message);
         }
@@ -381,7 +325,7 @@ export function createConversation({
     const convo = load(profile);
     if (convo.roomId !== room.id) return;
     persist(profile, { state: 'MENU' });
-    sendMenu(profile, 'O dono da mesa retirou você desta partida.');
+    // Sem aviso automático: quem foi retirado vê isso na web e pede *menu*.
   }
 
   function closedFor(room, playerId) {
@@ -390,8 +334,7 @@ export function createConversation({
     const convo = load(profile);
     if (convo.roomId !== room.id) return;
     persist(profile, { state: 'MENU' });
-    if (room.closedReason === 'inactive') return sendMenu(profile, CANCELLED);
-    send(playerId, 'A mesa foi encerrada. Digite *menu* para jogar de novo.');
+    // Sem aviso automático: a mesa encerrada aparece na web.
   }
 
   function onRoomChanged(room) {
@@ -438,16 +381,17 @@ export function createConversation({
       [
         `Você entrou na mesa de ${owner.name} (${gameName(room.gameId)}).`,
         missing > 0
-          ? `Faltam ${missing} jogador(es). Eu aviso quando começar.`
+          ? `Faltam ${missing} jogador(es). A partida começa na web quando a mesa encher.`
           : 'A mesa está completa.',
       ].join('\n')
     );
     if (missing > 0)
       sendWebLink(profile.id, room, 'Abra a mesa na web enquanto espera:');
-    if (missing > 0)
-      for (const id of room.playerIds)
-        if (id !== profile.id)
-          send(id, `${profile.name} entrou. Faltam ${missing} jogador(es).`);
+    else {
+      // Resposta ao pedido de quem entrou; os demais não recebem aviso.
+      const full = rooms.normalizeRoom(store.getRoom(room.id));
+      if (full?.game) sendView(full, profile.id, { force: true });
+    }
   }
 
   function createAndAnnounce(profile, draft) {
@@ -630,7 +574,6 @@ export function createConversation({
         profile.id,
         `Pronto! ${owner.name} está nos seus favoritos e pode chamar você.`
       );
-      send(ownerId, `${profile.name} aceitou seus convites.`);
       const room = openRoom(payload?.roomId);
       if (room && room.status === 'WAITING' && room.ownerId === ownerId)
         deliverCall(owner, profile, room);

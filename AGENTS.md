@@ -23,3 +23,7 @@ The limited history uses a `fix:` prefix. Follow the roadmap's `feat:`, `fix:`, 
 ## Security & Configuration
 
 Never commit `.env`, databases, or credentials. Validate all actions on the server and preserve private hands. Production requires HTTPS, `PUBLIC_ORIGIN`, persistent storage, and one server instance; see `docs/architecture.md`.
+
+## Regra do WhatsApp
+
+Nunca envie notificação automática do jogo pelo WhatsApp (início, vez, tempo, rodada, fim, saída, retirada, mesa encerrada, entrada de convidado): spam gera banimento do número. O WhatsApp só responde ao que a pessoa pede (_jogo_, _menu_, _revanche_) e serve para convite e entrada na mesa; tudo o que acontece na partida é avisado só na web.

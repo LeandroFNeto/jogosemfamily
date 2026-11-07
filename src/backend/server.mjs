@@ -50,6 +50,8 @@ export function createApplication({
       ? join(root, 'backups')
       : null),
   retention = retentionFromEnv(),
+  // Pausa de cada jogada de bot, para parecer gente (BOT_DELAY_MS no servidor real).
+  botDelayMs = 0,
 } = {}) {
   if (publicOrigin) {
     const parsed = new URL(publicOrigin);
@@ -59,6 +61,13 @@ export function createApplication({
     );
     publicOrigin = parsed.origin;
   }
+  const tunnelOrigin = (() => {
+    try {
+      return webBaseUrl ? new URL(webBaseUrl).origin : '';
+    } catch {
+      return '';
+    }
+  })();
   const store = openStore(databasePath);
   // shortcut: eventos em memória atendem uma instância; usar pub/sub ao escalar servidores.
   const streams = new Map();
@@ -67,6 +76,7 @@ export function createApplication({
   const now = clock;
   const profileOf = (id) => store.getProfile(id);
   const rooms = createRoomsService({
+    botDelayMs,
     store,
     now,
     images,
@@ -275,8 +285,11 @@ export function createApplication({
   async function api(req, res, url) {
     rateLimit(req);
     const requestOrigin = publicOrigin || `http://${req.headers.host}`;
+    // Túnel/domínio configurado em WEB_BASE_URL também é origem própria.
     requireValue(
-      !req.headers.origin || req.headers.origin === requestOrigin,
+      !req.headers.origin ||
+        req.headers.origin === requestOrigin ||
+        req.headers.origin === tunnelOrigin,
       'Origem não autorizada.',
       403
     );
@@ -827,8 +840,16 @@ if (
     throw new Error(
       'Configure PUBLIC_ORIGIN com a origem HTTPS antes de publicar.'
     );
-  const app = createApplication();
+  const app = createApplication({
+    botDelayMs: Number(process.env.BOT_DELAY_MS ?? 2000),
+  });
   const port = Number(process.env.PORT || 3000);
+  // Segunda instância (porta ocupada): sai na hora. Duas instâncias no mesmo
+  // banco enviariam cada mensagem do WhatsApp duas vezes.
+  app.server.on('error', (error) => {
+    console.error(`Não foi possível abrir a porta ${port}: ${error.message}`);
+    process.exit(1);
+  });
   app.server.listen(port, process.env.HOST || '0.0.0.0', () =>
     console.log(`Mesa em Família: http://localhost:${port}`)
   );

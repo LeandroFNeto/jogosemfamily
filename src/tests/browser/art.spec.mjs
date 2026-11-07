@@ -146,7 +146,7 @@ test('na partida, a mão de dominó usa as peças desenhadas e a jogada anima s�
   await expect(page.locator('.board-tile').first()).toBeAttached();
 });
 
-test('no celular de 375×667 a mão do dominó já aparece e sair fica depois dela', async ({
+test('no celular de 375×667 a mão do dominó já aparece e o menu fica no canto', async ({
   page,
 }) => {
   await page.setViewportSize({ width: 375, height: 667 });
@@ -162,12 +162,12 @@ test('no celular de 375×667 a mão do dominó já aparece e sair fica depois de
       document.querySelector(selector).getBoundingClientRect().top + scrollY;
     return {
       hand: top('.hand-section'),
-      leave: top('#leave-room'),
+      menu: document.querySelector('#game-menu').getBoundingClientRect().top,
       overflow: document.documentElement.scrollWidth - innerWidth,
     };
   });
   expect(layout.hand).toBeLessThan(667);
-  expect(layout.leave).toBeGreaterThan(layout.hand);
+  expect(layout.menu).toBeLessThan(layout.hand);
   expect(layout.overflow).toBeLessThanOrEqual(0);
   const tile = await page.locator('.tile-button').first().boundingBox();
   expect(tile.width).toBeGreaterThanOrEqual(44);

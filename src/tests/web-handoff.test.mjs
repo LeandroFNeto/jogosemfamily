@@ -232,15 +232,14 @@ test('convidado que entra recebe o próprio link e a partida avisa os dois', asy
   const guestLink = linkOf(bot.fake.take(BIA).concat(joined));
   assert.ok(ownerLink && guestLink && ownerLink !== guestLink);
   const anaStart = bot.fake.take(ANA).join(NL);
-  assert.match(anaStart, /começou/);
-  assert.equal(linkOf(anaStart), undefined, 'o dono já tem o link ativo');
+  assert.equal(anaStart, '', 'o dono não recebe aviso automático do jogo');
 
   const redeemGuest = redeemWebLink(bot.app.store, guestLink);
   const bia = bot.app.store.getProfile(redeemGuest.profileId);
   assert.equal(bia.name, 'Bia', 'o link do convidado é do perfil dele');
 });
 
-test('lembrete da vez traz o link da partida', async (t) => {
+test('lembrete de tempo não vai para o WhatsApp', async (t) => {
   const clock = { time: Date.now() };
   const bot = startBot({}, { clock: () => clock.time });
   t.after(() => stop(bot));
@@ -261,7 +260,5 @@ test('lembrete da vez traz o link da partida', async (t) => {
   clock.time += snapshot.turn.seconds * 1000 - 10_000;
   bot.app.whatsapp.tick();
   await bot.app.whatsapp.idle();
-  const reminder = bot.fake.take(ANA).join(NL);
-  assert.match(reminder, /Últimos 15 segundos/);
-  assert.equal(linkOf(reminder), undefined, 'o lembrete não reenvia o link');
+  assert.deepEqual(bot.fake.take(ANA), [], 'o tempo é avisado só na web');
 });

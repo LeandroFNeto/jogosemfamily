@@ -84,7 +84,8 @@ test('Cacheta: ajuda explica as regras', async ({ page }) => {
   const form = page.locator('[data-create-game="cacheta"]');
   await form.getByLabel('Modo de jogo').selectOption('bot');
   await form.getByRole('button', { name: /Jogar Cacheta/ }).click();
-  await page.getByRole('button', { name: 'Preciso de ajuda' }).click();
+  await page.getByRole('button', { name: 'Abrir menu' }).click();
+  await page.locator('#game-help').click();
   await expect(page.getByText(/9 cartas/).first()).toBeVisible();
 });
 
@@ -150,8 +151,9 @@ test('caça-palavras: toque, arrasto, teclado e palavra digitada até concluir',
   }
   await expect(page.locator('#rematch')).toBeVisible();
   await expect(
-    page.getByText('Desafio concluído. Vocês conseguiram!')
+    page.getByText('Desafio concluído. Vocês conseguiram!').first()
   ).toBeVisible();
+  await expect(page.locator('#harder')).toContainText('Aumentar dificuldade');
   expect(errors).toEqual([]);
 });
 

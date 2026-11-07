@@ -115,6 +115,7 @@ for (const difficulty of ['medium']) {
       } else if (gameId === 'cards') {
         await expect(page.locator('.player-card')).toHaveCount(4);
         await page.locator('[data-card]:enabled').first().click();
+        await page.locator('#play-picked').click();
         if (difficulty === 'hard')
           await page.screenshot({
             path: testInfo.outputPath('truco-seis-participantes.png'),
@@ -127,6 +128,7 @@ for (const difficulty of ['medium']) {
             (await (await page.request.get(`/api/rooms/${id}`)).json()).revision
         )
         .toBeGreaterThan(before.revision);
+      await page.getByRole('button', { name: 'Abrir menu' }).click();
       await page
         .getByRole('button', { name: 'Sair (um bot assume)', exact: true })
         .click();
@@ -176,6 +178,8 @@ test('Truco online completa quatro lugares confirmados e mostra as duas equipes'
     await expect(page.locator('.player-card')).toHaveCount(4);
     await expect(page.locator('[data-card]')).toHaveCount(3);
     await page.locator('[data-card]').first().click();
+    await expect(page.locator('.card-button.picked')).toHaveCount(1);
+    await page.locator('#play-picked').click();
     await expect(page.locator('.played-cards > div')).toHaveCount(1);
     await expect(page.locator('.truco-summary')).toContainText('Equipe A: 0');
   } finally {
