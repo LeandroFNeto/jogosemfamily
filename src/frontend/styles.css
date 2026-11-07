@@ -3953,3 +3953,57 @@ body:has(.game-screen) #notice:not([hidden]) {
 .game-screen.dgame .d-board-wrap .d-seat .d-info strong {
   max-width: 5rem;
 }
+
+/* Palavras cruzadas: uma casa por letra da pista escolhida */
+.answer-boxes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin: 0.4rem 0;
+}
+.answer-box {
+  width: clamp(2.2rem, 11vw, 3rem);
+  height: clamp(2.6rem, 13vw, 3.4rem);
+  padding: 0;
+  text-align: center;
+  font-size: 1.4rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  border: 2px solid var(--green);
+  border-radius: 0.5rem;
+  background: #fffefa;
+  color: var(--ink);
+}
+.answer-box.cursor,
+.answer-box:focus {
+  outline: 3px solid var(--focus);
+  background: #ffe9a8;
+}
+@media (max-width: 700px) {
+  /* Celular: pista e casas das letras logo no alto, a grade depois */
+  .crossword-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+  .crossword-layout > div {
+    display: contents;
+  }
+  .crossword-layout .cw-active {
+    order: 1;
+    margin: 0;
+  }
+  .crossword-layout .clue-card {
+    order: 2;
+  }
+  .crossword-layout h2 {
+    order: 3;
+    margin: 0;
+  }
+  .crossword-layout .crossword-grid {
+    order: 4;
+  }
+  .crossword-layout .fine {
+    order: 5;
+  }
+}

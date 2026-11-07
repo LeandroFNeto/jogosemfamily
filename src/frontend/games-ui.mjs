@@ -66,6 +66,15 @@ let uiRevision = -1;
 let selectedPiece = null;
 let selectedWord = '';
 let answerDraft = '';
+let cwCursor = 0;
+// Letras da resposta, uma por casa (vazio quando a casa está livre).
+const draftLetters = (length) =>
+  Array.from({ length }, (_, i) => {
+    const char = answerDraft[i] ?? '';
+    return /\p{L}/u.test(char) ? char.toLocaleUpperCase('pt-BR') : '';
+  });
+const packLetters = (letters) => letters.map((l) => l || ' ').join('');
+cwCursor = 0;
 let showNumbers = false;
 let wordStart = null;
 let wordDraft = '';
@@ -92,6 +101,7 @@ function crosswordMarkup(game, enabled) {
   if (!remaining.some((word) => word.id === selectedWord)) {
     selectedWord = remaining[0]?.id || '';
     answerDraft = '';
+    cwCursor = 0;
   }
   const chosen = remaining.find((word) => word.id === selectedWord);
   cwGame = game;
@@ -102,7 +112,8 @@ function crosswordMarkup(game, enabled) {
       const col = chosen.column + (chosen.direction === 'horizontal' ? i : 0);
       active.set(row * game.columns + col, i);
     }
-  const draft = answerDraft.replace(/[^\p{L}]/gu, '');
+  const letters = draftLetters(chosen?.length ?? 0);
+  const cursor = Math.min(cwCursor, Math.max(0, (chosen?.length ?? 1) - 1));
   const gridHtml = Array.from(
     { length: game.rows },
     (_, row) =>
@@ -114,14 +125,14 @@ function crosswordMarkup(game, enabled) {
           const index = row * game.columns + col;
           const pos = active.get(index);
           const typed =
-            pos !== undefined && !cell.letter ? (draft[pos] ?? '') : '';
+            pos !== undefined && !cell.letter ? (letters[pos] ?? '') : '';
           const label = `Linha ${row + 1}, coluna ${col + 1}: ${cell.letter || 'vazia'}${cell.number ? ', início da pista ' + cell.number : ''}`;
-          return `<button type="button" role="cell" class="crossword-cell${pos !== undefined ? ' in-word' : ''}${pos !== undefined && pos === Math.min(draft.length, chosen.length - 1) ? ' cursor' : ''}" data-cw-row="${row}" data-cw-col="${col}" aria-label="${label}" ${enabled ? '' : 'disabled'}><small aria-hidden="true">${cell.number}</small><b aria-hidden="true">${cell.letter || e(typed)}</b></button>`;
+          return `<button type="button" role="cell" class="crossword-cell${pos !== undefined ? ' in-word' : ''}${pos !== undefined && pos === cursor ? ' cursor' : ''}" data-cw-row="${row}" data-cw-col="${col}" aria-label="${label}" ${enabled ? '' : 'disabled'}><small aria-hidden="true">${cell.number}</small><b aria-hidden="true">${cell.letter || e(typed)}</b></button>`;
         })
         .join('')}</div>`
   ).join('');
   return `<section class="crossword-layout"><div>${chosen ? `<div class="cw-active" aria-live="polite"><span class="cw-badge">${chosen.number} ${chosen.direction === 'vertical' ? '↓' : '→'}</span><span>${e(chosen.clue)} <small>(${chosen.length} letras)</small></span></div>` : ''}<h2>${e(game.title)}</h2><div class="crossword-grid" role="table" aria-label="Grade de palavras cruzadas" style="grid-template-columns:repeat(${game.columns},minmax(0,1fr))">${gridHtml}</div><p class="fine">Toque num quadrado, veja a dica no alto e digite a palavra direto. As letras aparecem na grade. Acentos não são obrigatórios.</p></div>
-    <div class="card clue-card">${remaining.length ? `<form id="answer-form" class="stack"><label>Escolha uma pista<select id="word-choice">${remaining.map((word) => `<option value="${word.id}" ${word.id === selectedWord ? 'selected' : ''}>${word.number} · ${word.direction} · ${word.length} letras</option>`).join('')}</select></label><p id="word-clue"><strong>${e(chosen.clue)}</strong></p><label>Sua resposta<input id="crossword-answer" value="${e(answerDraft)}" maxlength="50" autocomplete="off" autocapitalize="characters" spellcheck="false" required aria-describedby="word-clue"></label><button class="primary" type="submit" ${enabled ? '' : 'disabled'}>Conferir palavra</button></form>${game.feedback?.correct === false && game.feedback.playerId ? '<p role="status">Ainda não é essa palavra. Confira a pista na sua próxima vez.</p>' : ''}` : '<h3>Todas as palavras foram encontradas!</h3>'}
+    <div class="card clue-card">${remaining.length ? `<form id="answer-form" class="stack"><label>Escolha uma pista<select id="word-choice">${remaining.map((word) => `<option value="${word.id}" ${word.id === selectedWord ? 'selected' : ''}>${word.number} · ${word.direction} · ${word.length} letras</option>`).join('')}</select></label><p id="word-clue"><strong>${e(chosen.clue)}</strong></p><div id="crossword-answer" class="answer-boxes" role="group" aria-label="Sua resposta" aria-describedby="word-clue">${letters.map((letter, i) => `<input class="answer-box${i === cursor ? ' cursor' : ''}" data-i="${i}" value="${e(letter)}" maxlength="2" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-label="Letra ${i + 1} de ${letters.length}" ${enabled ? '' : 'disabled'}>`).join('')}</div><p class="fine" id="answer-hint">Digite as letras, toque numa casa para trocar ou apague. Enter confere a palavra.</p><button class="primary" type="submit" ${enabled ? '' : 'disabled'}>Conferir palavra</button></form>${game.feedback?.correct === false && game.feedback.playerId ? '<p role="status">Ainda não é essa palavra. Confira a pista na sua próxima vez.</p>' : ''}` : '<h3>Todas as palavras foram encontradas!</h3>'}
     <h3 class="solved-heading">Palavras encontradas: ${game.solved.length} de ${game.words.length}</h3><ul class="solved-words">${
       game.words
         .filter((word) => word.answer)
@@ -494,6 +505,7 @@ export function renderAdditionalGame(context) {
     selectedPiece = null;
     selectedWord = '';
     answerDraft = '';
+    cwCursor = 0;
     showNumbers = false;
     wordStart = null;
     wordDraft = '';
@@ -732,12 +744,13 @@ export function renderAdditionalGame(context) {
     ?.addEventListener('change', (event) => {
       selectedWord = event.target.value;
       answerDraft = '';
+      cwCursor = 0;
       renderAdditionalGame(context);
     });
   const paintDraft = () => {
     const word = cwGame?.words.find((item) => item.id === selectedWord);
     if (!word) return;
-    const letters = answerDraft.replace(/[^\p{L}]/gu, '');
+    const letters = draftLetters(word.length);
     document.querySelectorAll('.crossword-cell').forEach((cell) => {
       cell.classList.remove('cursor');
     });
@@ -749,21 +762,59 @@ export function renderAdditionalGame(context) {
       );
       if (!cell) continue;
       const slot = cell.querySelector('b');
-      if (!word.answer && slot) slot.textContent = letters[i] ?? '';
-      if (i === Math.min(letters.length, word.length - 1))
-        cell.classList.add('cursor');
+      if (!word.answer && slot) slot.textContent = letters[i];
+      if (i === cwCursor) cell.classList.add('cursor');
     }
-  };
-  document
-    .querySelector('#crossword-answer')
-    ?.addEventListener('input', (event) => {
-      answerDraft = event.target.value;
-      paintDraft();
-      const word = cwGame?.words.find((item) => item.id === selectedWord);
-      const letters = answerDraft.replace(/[^\p{L}]/gu, '');
-      if (enabled && word && letters.length >= word.length)
-        document.querySelector('#answer-form')?.requestSubmit();
+    document.querySelectorAll('.answer-box').forEach((box, i) => {
+      box.classList.toggle('cursor', i === cwCursor);
     });
+  };
+  // Uma casa por letra: digitar avança, apagar volta, e qualquer casa pode ser trocada.
+  const boxes = [...document.querySelectorAll('.answer-box')];
+  const focusBox = (index) => {
+    const box = boxes[Math.max(0, Math.min(index, boxes.length - 1))];
+    box?.focus();
+    box?.select();
+  };
+  const setLetter = (index, letter) => {
+    const letters = draftLetters(boxes.length);
+    letters[index] = letter;
+    answerDraft = packLetters(letters);
+    boxes[index].value = letter;
+  };
+  boxes.forEach((box, i) => {
+    box.addEventListener('focus', () => {
+      cwCursor = i;
+      box.select();
+      paintDraft();
+    });
+    box.addEventListener('input', () => {
+      const typed = [...box.value].filter((char) => /\p{L}/u.test(char));
+      // Digitar sobre uma casa cheia troca a letra pela nova.
+      const letter = (typed.at(-1) ?? '').toLocaleUpperCase('pt-BR');
+      setLetter(i, letter);
+      if (letter && i < boxes.length - 1) focusBox(i + 1);
+      else paintDraft();
+    });
+    box.addEventListener('keydown', (event) => {
+      if (event.key === 'Backspace' || event.key === 'Delete') {
+        event.preventDefault();
+        if (box.value) setLetter(i, '');
+        else if (event.key === 'Backspace' && i > 0) {
+          setLetter(i - 1, '');
+          focusBox(i - 1);
+          return;
+        }
+        paintDraft();
+      } else if (event.key === 'ArrowLeft') {
+        event.preventDefault();
+        focusBox(i - 1);
+      } else if (event.key === 'ArrowRight') {
+        event.preventDefault();
+        focusBox(i + 1);
+      }
+    });
+  });
   document.querySelectorAll('[data-cw-row]').forEach((button) => {
     button.onclick = () => {
       if (!enabled || !cwGame) return;
@@ -788,24 +839,35 @@ export function renderAdditionalGame(context) {
           ? covering[(current + 1) % covering.length]
           : (starting ?? covering[0]);
       if (next.id !== selectedWord) answerDraft = '';
+      cwCursor = 0;
       selectedWord = next.id;
       renderAdditionalGame(context);
-      document.querySelector('#crossword-answer')?.focus();
+      document.querySelector('.answer-box')?.focus();
     };
   });
   document
     .querySelector('#answer-form')
     ?.addEventListener('submit', (event) => {
       event.preventDefault();
+      const letters = draftLetters(boxes.length);
+      const empty = letters.indexOf('');
+      if (empty >= 0) {
+        const hint = document.querySelector('#answer-hint');
+        if (hint) hint.textContent = 'Faltam letras. Preencha todas as casas.';
+        focusBox(empty);
+        return;
+      }
       perform(async () => {
         await onAction({
           type: 'answer',
           wordId: selectedWord,
-          answer: answerDraft,
+          answer: letters.join(''),
         });
         answerDraft = '';
-        const input = document.querySelector('#crossword-answer');
-        if (input) input.value = '';
+        cwCursor = 0;
+        boxes.forEach((box) => (box.value = ''));
+        paintDraft();
+        focusBox(0);
       });
     });
   document

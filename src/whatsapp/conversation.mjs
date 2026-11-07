@@ -111,6 +111,9 @@ export function createConversation({
 
   // Um link por pessoa e mesa: fica ativo e só é reenviado quando a pessoa
   // pede (*jogo*). Se já existe um ativo, `plain` (se houver) vai no lugar.
+  const recentLinks = new Map();
+  const LINK_LOCK_MS = 30000;
+
   function sendWebLink(
     profileId,
     room,
@@ -118,11 +121,24 @@ export function createConversation({
     { again = false, plain = '' } = {}
   ) {
     if (!webOrigin) return send(profileId, NO_WEB);
+    // Trava: um link por pessoa. Envios automáticos em seguida não geram outro;
+    // só um pedido explícito (*jogo*) troca o link.
+    const last = recentLinks.get(profileId);
+    if (
+      !again &&
+      last &&
+      last.roomId === room.id &&
+      now() - last.at < LINK_LOCK_MS
+    ) {
+      if (plain) send(profileId, plain);
+      return;
+    }
     if (!again && hasWebLink(store, profileId, room.id, now())) {
       if (plain) send(profileId, plain);
       return;
     }
     const { token } = issueWebLink(store, profileId, room.id, now());
+    recentLinks.set(profileId, { roomId: room.id, at: now() });
     send(profileId, `${intro}\nSe precisar do link de novo, digite *jogo*.`);
     send(profileId, `${webOrigin}/m/${token}`);
   }

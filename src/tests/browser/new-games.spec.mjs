@@ -27,8 +27,10 @@ test('palavras cruzadas individual conclui as seis pistas e reinicia pelo teclad
   const board = crosswords.find((board) => board.title === state.game.title);
   for (const [i, word] of board.words.entries()) {
     await page.locator('#word-choice').selectOption(word.id);
-    await page.getByLabel('Sua resposta').fill(word.answer.toLowerCase());
-    // Ao completar as letras a resposta é enviada sozinha.
+    await page.locator('.answer-box').first().click();
+    await page.keyboard.type(word.answer.toLowerCase());
+    // Só confere quando a pessoa aperta Enter.
+    await page.keyboard.press('Enter');
     await expect(page.locator('.solved-words li')).toHaveCount(i + 1);
   }
   await expect(page.locator('#rematch')).toBeVisible();
