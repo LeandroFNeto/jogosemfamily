@@ -20,6 +20,29 @@ import {
   rankName,
 } from '/art.mjs';
 
+/**
+ * Regra da cruz (padrão ocidental, vale para todo jogo de mesa): quem vê a tela
+ * fica embaixo e a vez segue no sentido horário: esquerda, topo, direita.
+ */
+export const CROSS_PLACES = {
+  1: ['bottom'],
+  2: ['bottom', 'top'],
+  3: ['bottom', 'left', 'right'],
+  4: ['bottom', 'left', 'top', 'right'],
+};
+export function crossOrder(players, playerIds, meId) {
+  const ids = playerIds?.length ? playerIds : players.map((p) => p.id);
+  const start = Math.max(0, ids.indexOf(meId));
+  const places = CROSS_PLACES[ids.length] || CROSS_PLACES[4];
+  return ids
+    .map((_, i) => ids[(start + i) % ids.length])
+    .map((id, i) => ({
+      player: players.find((p) => p.id === id),
+      place: places[i] || 'top',
+    }))
+    .filter((seat) => seat.player);
+}
+
 export function gameSetupFields(game, me) {
   return `<label>Modo de jogo<select name="mode" id="mode-${game.id}">${game.solo ? '<option value="solo">Jogar sozinho</option>' : ''}<option value="online">${game.solo ? 'Em grupo, com familiares' : `Com familiar${game.capacities ? 'es' : ''}`}</option>${game.solo ? '' : '<option value="bot">Contra o bot</option>'}</select></label>
     <input type="hidden" name="difficulty" value="medium">
@@ -522,7 +545,16 @@ export function renderAdditionalGame(context) {
           `${room.id}:${room.revision}`
         )
       : `<section class="game-page game-screen game-${room.gameId}">${screenBar({ title: e(metadata.name) })}${gameSheet({ connected, readId: 'read-game', readLabel: 'Ler instruções em voz alta', info: `<strong>${e(metadata.name)}</strong> · ${room.mode === 'bot' ? 'Contra bots' : 'Sem pressa'}` })}
-    <section class="players additional-players" aria-label="Participantes" ${room.gameId === 'cards' ? 'hidden' : ''}>${(room.gameId === 'cards' ? [] : players).map((player, i) => `<div class="player-card${actor === player.id && !finished ? ' active-player' : ''}">${avatar(player)}<span class="seat-time" aria-hidden="true"></span><div><strong>${e(player.name)}${player.id === me.id ? ' (você)' : ''}${botTag(player)}</strong><small>${room.gameId === 'cards' ? `Equipe ${i % 2 === 0 ? 'A' : 'B'} · ` : ''}${game.score[player.id].wins} vitória(s) · ${game.score[player.id].points} ponto(s)</small>${game.progress ? `<small>${game.progress[player.id]} de ${room.gameId === 'puzzle' ? (game.size ?? 3) ** 2 : game.words.length} encontrados</small>` : ''}</div></div>`).join('')}</section>
+    <section class="players additional-players cross-seats" data-seats="${players.length}" aria-label="Participantes" ${room.gameId === 'cards' ? 'hidden' : ''}>${crossOrder(
+      room.gameId === 'cards' ? [] : players,
+      game.playerIds,
+      me.id
+    )
+      .map(
+        ({ player, place }, i) =>
+          `<div class="player-card seat-${place}${actor === player.id && !finished ? ' active-player' : ''}">${avatar(player)}<span class="seat-time" aria-hidden="true"></span><div><strong>${e(player.name)}${player.id === me.id ? ' (você)' : ''}${botTag(player)}</strong><small>${room.gameId === 'cards' ? `Equipe ${i % 2 === 0 ? 'A' : 'B'} · ` : ''}${game.score[player.id].wins} vitória(s) · ${game.score[player.id].points} ponto(s)</small>${game.progress ? `<small>${game.progress[player.id]} de ${room.gameId === 'puzzle' ? (game.size ?? 3) ** 2 : game.words.length} encontrados</small>` : ''}</div></div>`
+      )
+      .join('')}</section>
     <div id="turn-status" tabindex="-1" class="turn-banner${enabled ? ' my-turn' : ''}" role="status" aria-live="polite"><strong>${e(status)}</strong><span>${room.mode === 'bot' ? 'Cada jogada sua dá uma vez ao bot.' : room.solo ? 'No seu ritmo, sem limite de tempo.' : 'Jogue com pessoas conhecidas, no tempo combinado.'}</span></div>
     ${content}
     ${finished ? endMarkup(room, game, status, me.id, connected) : ''}

@@ -27,3 +27,7 @@ Never commit `.env`, databases, or credentials. Validate all actions on the serv
 ## Regra do WhatsApp
 
 Nunca envie notificação automática do jogo pelo WhatsApp (início, vez, tempo, rodada, fim, saída, retirada, mesa encerrada, entrada de convidado): spam gera banimento do número. O WhatsApp só responde ao que a pessoa pede (_jogo_, _menu_, _revanche_) e serve para convite e entrada na mesa; tudo o que acontece na partida é avisado só na web.
+
+## Regra da cruz (jogos de mesa)
+
+Em todo jogo multiplayer com mesa (dominó, Truco, cacheta e os demais), os lugares seguem o padrão ocidental: quem vê a tela fica embaixo e os outros ficam em cruz, no **sentido horário**: o próximo da vez é o da esquerda, depois o do topo, depois o da direita. Com 4 jogadores usam-se os quatro pontos (parceiros do Truco ficam frente a frente); com 3, esquerda e direita; com 2, topo. A ordem dos `playerIds` no motor é a ordem da vez, então o lugar na tela sai de `(índice − meu índice) % total`. Veja `CROSS_PLACES`/`crossOrder` em `games-ui.mjs`, `SEAT_POSITIONS` em `app.mjs` e `placeOf` no Truco. Qualquer mudança de jogabilidade, posição de jogador ou ordem de vez deve manter essa regra. O jogador da vez cresce, fica em amarelo e mostra os segundos.
