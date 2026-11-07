@@ -440,7 +440,7 @@ function dominoSeat(player, game, position) {
     { length: Math.min(count, 7) },
     () => '<span class="d-back"></span>'
   ).join('');
-  return `<div class="d-seat d-${position}${active ? ' active-player' : ''}">${avatar(player)}<span class="seat-time" aria-hidden="true"></span><div class="d-info"><strong>${e(player.name)}</strong><small>${count} peça(s) · ${game.score[player.id].points} pt${room.online[player.id] ? '' : ' · sem conexão'}</small></div><span class="d-backs" aria-hidden="true">${backs}</span></div>`;
+  return `<div class="d-seat d-${position}${active ? ' active-player' : ''}" data-count="${count}">${avatar(player)}<span class="seat-time" aria-hidden="true"></span><div class="d-info"><strong>${e(player.name)}</strong><small>${count} peça(s) · ${game.score[player.id].points} pt${room.online[player.id] ? '' : ' · sem conexão'}</small></div><span class="d-backs" aria-hidden="true">${backs}</span></div>`;
 }
 
 let justDragged = false;
@@ -563,14 +563,20 @@ function renderPlaying() {
       dominoSeat(player, game, SEAT_POSITIONS[order.length][i])
     )
     .join('');
+  // Regra da cruz: eu embaixo; os outros à esquerda, no topo e à direita.
+  const mySeat = dominoSeat(
+    room.players.find((player) => player.id === me.id) ?? me,
+    game,
+    'bottom'
+  );
   const leftEnd = game.board.length ? game.board[0].a : '';
   const rightEnd = game.board.length ? game.board.at(-1).b : '';
   setContent(`<section class="game-page dgame game-screen">
     ${screenBar({ title: 'Dominó' })}
     ${gameSheet({ connected, readId: 'read-hand', readLabel: 'Ler minhas peças em voz alta', info: `<strong>Dominó</strong> · ${room.turn ? `${room.turnSeconds} s por jogada` : 'Sem pressa'} · ${game.score[me.id].points} pt` })}
     <div id="turn-status" tabindex="-1" class="turn-banner${myTurn ? ' my-turn' : ''}" role="status" aria-live="polite"><strong>${e(status)}</strong><span>${game.status === 'FINISHED' ? `Pontos nesta rodada: ${game.result.points}. ${game.result.reason === 'blocked' ? 'A mesa ficou fechada.' : 'Todas as peças foram jogadas.'}` : myTurn ? 'Toque numa peça ou arraste até a mesa.' : 'Aguarde a sua vez.'}</span></div>
-    <div class="dtable" data-players="${order.length}">${seats}
-      <section class="table d-board-wrap" aria-label="Peças na mesa">
+    <div class="dtable" data-players="${order.length}">
+      <section class="table d-board-wrap" aria-label="Peças na mesa">${seats}${mySeat}
         <div class="board${myTurn && hasMove ? ' can-play' : ''}${chosen ? ' choosing' : ''}" role="list" aria-label="Sequência de peças, da esquerda para a direita">${game.board.length ? game.board.map((tile, i) => `<span data-motion="b-${tile.id}" class="board-tile${i === 0 || i === game.board.length - 1 ? ' open-end' : ''}" role="listitem" aria-label="Peça ${i + 1}: ${tile.a} e ${tile.b}">${tileMarkup(tile)}</span>`).join('') : '<div class="empty-table"><span aria-hidden="true">⠿</span><p>A primeira peça começa<br>uma boa companhia.</p></div>'}</div>
         <div class="drop-zone drop-left" aria-hidden="true"><span>← ${leftEnd}</span></div><div class="drop-zone drop-right" aria-hidden="true"><span>${rightEnd || 'Solte aqui'} →</span></div>
       </section>

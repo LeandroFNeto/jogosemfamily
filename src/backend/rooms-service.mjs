@@ -506,7 +506,15 @@ export function createRoomsService({
       const others = presentHumans(old).filter((id) => id !== profileId);
       if (old.ownerId === profileId && !others.length)
         closeRoom(old, 'replaced');
-      else leave(old, { id: profileId });
+      else {
+        leave(old, { id: profileId });
+        // Quem sai de uma mesa que continua com outras pessoas perde o placar dela.
+        const mine = old.game?.score?.[profileId];
+        if (mine) {
+          mine.wins = 0;
+          mine.points = 0;
+        }
+      }
       save(old);
     }
   }

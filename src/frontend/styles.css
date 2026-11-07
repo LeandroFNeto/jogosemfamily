@@ -3830,3 +3830,126 @@ body:has(.game-screen) #notice:not([hidden]) {
     animation: none;
   }
 }
+
+/* Dominó em cruz, como o Truco: os jogadores ficam sobre a mesa, eu embaixo */
+.game-screen.dgame .dtable,
+.game-screen.dgame .dtable[data-players] {
+  display: block;
+  min-height: clamp(16rem, 52dvh, 46rem);
+}
+.game-screen.dgame .d-board-wrap {
+  position: relative;
+  height: 100%;
+  min-height: clamp(16rem, 52dvh, 46rem);
+  padding: 4rem 3.6rem;
+}
+.game-screen.dgame .d-board-wrap .d-seat {
+  position: absolute;
+  z-index: 3;
+  margin: 0;
+  max-width: 5rem;
+}
+.game-screen.dgame .d-board-wrap .d-top {
+  top: 0.5rem;
+  left: 50%;
+  margin-left: -2.5rem;
+  width: 5rem;
+}
+.game-screen.dgame .d-board-wrap .d-bottom {
+  bottom: 0.5rem;
+  left: 50%;
+  margin-left: -2.5rem;
+  width: 5rem;
+}
+.game-screen.dgame .d-board-wrap .d-left {
+  left: 0.3rem;
+  top: 50%;
+  transform: translateY(-50%);
+}
+.game-screen.dgame .d-board-wrap .d-right {
+  right: 0.3rem;
+  top: 50%;
+  transform: translateY(-50%);
+}
+.game-screen.dgame .d-board-wrap .d-left.active-player,
+.game-screen.dgame .d-board-wrap .d-right.active-player {
+  transform: translateY(-50%) scale(1.3);
+}
+.game-screen.dgame .d-board-wrap .d-seat .d-info strong,
+.game-screen.dgame .d-board-wrap .d-seat .d-info small {
+  text-shadow: 0 1px 2px #0008;
+}
+.game-screen.dgame .d-board-wrap .d-seat .d-info small {
+  display: none;
+}
+.game-screen.dgame .d-board-wrap .d-seat.active-player .d-info small {
+  display: block;
+}
+/* Bolinha com o total de peças na mão de cada um */
+.game-screen.dgame .d-seat::after {
+  content: attr(data-count);
+  position: absolute;
+  bottom: 1.2rem;
+  right: -0.1rem;
+  min-width: 1.2rem;
+  border-radius: 999px;
+  background: #fffefa;
+  color: #233c34;
+  font-size: 0.7rem;
+  font-weight: 800;
+  line-height: 1.2rem;
+  text-align: center;
+}
+@media (max-width: 700px) {
+  .game-screen.dgame .d-board-wrap {
+    padding: 3.7rem 3.2rem;
+  }
+}
+
+/* Caça-palavras: a grade quadrada em cima e, embaixo, o retângulo com a lista */
+.ws-layout {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+.ws-layout .ws-board {
+  width: min(100%, 38rem, calc(100dvh - 12rem));
+}
+.ws-layout .ws-grid {
+  max-width: none;
+}
+.ws-layout .clue-card {
+  width: min(100%, 38rem);
+}
+.ws-layout .ws-words {
+  columns: 2;
+  column-gap: 1.5rem;
+  margin: 0 0 0.6rem;
+  padding-left: 1.2rem;
+}
+.ws-layout .ws-words li {
+  break-inside: avoid;
+}
+@media (min-width: 700px) {
+  .ws-layout .ws-words {
+    columns: 3;
+  }
+}
+.game-screen.dgame .dtable[data-players] .d-board-wrap .d-seat {
+  flex-direction: column;
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+  padding: 0.2rem;
+  text-align: center;
+  width: 5rem;
+}
+.game-screen.dgame .d-seat::after {
+  bottom: auto;
+  right: auto;
+  top: 0;
+  left: calc(50% - 1.9rem);
+}
+.game-screen.dgame .d-board-wrap .d-seat .d-info strong {
+  max-width: 5rem;
+}

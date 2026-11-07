@@ -442,8 +442,13 @@ function wordsearchMarkup(game, enabled) {
           .join('')}</div>`
     )
     .join('');
-  return `<section class="puzzle-layout"><div><h2>Tema: ${e(game.theme.name)}</h2><div class="ws-grid ws-${game.size}" role="grid" aria-label="Grade com ${game.size} linhas e ${game.size} colunas">${rows}</div><p class="fine">${wordStart ? `Início na linha ${wordStart.row + 1}, coluna ${wordStart.col + 1}. Toque na última letra da palavra.` : 'Toque na primeira e na última letra de uma palavra, ou arraste por cima dela.'}</p></div>
-    <aside class="card clue-card"><h2>Palavras para achar</h2><ul class="solved-words ws-words">${game.words
+  // As que faltam ficam no começo da lista; as encontradas vão para o fim.
+  const ordered = [
+    ...game.words.filter((word) => !word.found),
+    ...game.words.filter((word) => word.found),
+  ];
+  return `<section class="ws-layout"><div class="ws-board"><h2>Tema: ${e(game.theme.name)}</h2><div class="ws-grid ws-${game.size}" role="grid" aria-label="Grade com ${game.size} linhas e ${game.size} colunas">${rows}</div><p class="fine">${wordStart ? `Início na linha ${wordStart.row + 1}, coluna ${wordStart.col + 1}. Toque na última letra da palavra.` : 'Toque na primeira e na última letra de uma palavra, ou arraste por cima dela.'}</p></div>
+    <aside class="card clue-card"><h2>Palavras para achar</h2><ul class="solved-words ws-words">${ordered
       .map(
         (word) =>
           `<li class="${word.found ? 'done' : ''}">${word.found ? `<s>${e(word.text)}</s> <span class="visually-hidden">encontrada</span>✓` : e(word.text)}</li>`

@@ -199,3 +199,23 @@ test('uma pessoa joga uma mesa por vez: criar outra encerra a antiga', () => {
     ctx.rooms.createRoom(ana, { gameId: 'cards', mode: 'bot' });
   assert.equal(ctx.rooms.listActive(ana.id).length, 1);
 });
+
+test('cada pessoa tem um único link da web: pedir outro invalida o anterior', async () => {
+  const { issueWebLink, redeemWebLink } =
+    await import('../invitations/web-links.mjs');
+  const ctx = setup({});
+  const ana = ctx.person('Ana');
+  const first = ctx.rooms.createRoom(ana, { gameId: 'cards', mode: 'bot' });
+  const oldLink = issueWebLink(ctx.store, ana.id, first.id, ctx.clock.time);
+  const second = ctx.rooms.createRoom(ana, { gameId: 'domino', mode: 'bot' });
+  const newLink = issueWebLink(ctx.store, ana.id, second.id, ctx.clock.time);
+  assert.throws(
+    () => redeemWebLink(ctx.store, oldLink.token, ctx.clock.time),
+    /não vale mais/
+  );
+  assert.equal(
+    redeemWebLink(ctx.store, newLink.token, ctx.clock.time).roomId ??
+      redeemWebLink(ctx.store, newLink.token, ctx.clock.time).room?.id,
+    second.id
+  );
+});

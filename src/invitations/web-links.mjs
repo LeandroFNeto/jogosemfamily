@@ -10,11 +10,10 @@ const PATH = /^[\w-]{43}$/;
  * token. O link fica ativo por 24 horas e pode ser aberto de novo; pedir outro
  * (*jogo*) invalida o anterior da mesma pessoa e mesa.
  */
+// Cada pessoa tem um único link ativo: pedir outro invalida o anterior.
 export function issueWebLink(store, profileId, roomId, now = Date.now()) {
   const token = newToken();
-  store.db
-    .prepare('DELETE FROM web_links WHERE profile_id = ? AND room_id = ?')
-    .run(profileId, roomId);
+  store.db.prepare('DELETE FROM web_links WHERE profile_id = ?').run(profileId);
   store.db
     .prepare('INSERT INTO web_links VALUES (?, ?, ?, ?, NULL)')
     .run(hashToken(token), profileId, roomId, now + WEB_LINK_TTL);
