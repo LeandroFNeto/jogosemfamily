@@ -440,7 +440,7 @@ function dominoSeat(player, game, position) {
     { length: Math.min(count, 7) },
     () => '<span class="d-back"></span>'
   ).join('');
-  return `<div class="d-seat d-${position}${active ? ' active-player' : ''}">${avatar(player)}<div class="d-info"><strong>${e(player.name)}</strong><small>${count} peça(s) · ${game.score[player.id].points} pt${room.online[player.id] ? '' : ' · sem conexão'}</small></div><span class="d-backs" aria-hidden="true">${backs}</span></div>`;
+  return `<div class="d-seat d-${position}${active ? ' active-player' : ''}">${avatar(player)}<span class="seat-time" aria-hidden="true"></span><div class="d-info"><strong>${e(player.name)}</strong><small>${count} peça(s) · ${game.score[player.id].points} pt${room.online[player.id] ? '' : ' · sem conexão'}</small></div><span class="d-backs" aria-hidden="true">${backs}</span></div>`;
 }
 
 let justDragged = false;

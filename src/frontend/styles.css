@@ -3563,3 +3563,187 @@ body:has(.game-screen) #notice:not([hidden]) {
     font-size: 1.05rem;
   }
 }
+
+/* Dominó: jogadores em círculos pequenos (o da vez cresce e fica amarelo) e mesa mais alta */
+.game-screen.dgame .dtable {
+  grid-template-columns: minmax(3.6rem, 5rem) minmax(0, 1fr) minmax(
+      3.6rem,
+      5rem
+    );
+  min-height: clamp(14rem, 52dvh, 44rem);
+  gap: 0.4rem;
+}
+.game-screen.dgame .dtable[data-players='2'] {
+  grid-template-columns: minmax(0, 1fr);
+}
+.game-screen.dgame .d-seat {
+  position: relative;
+  width: auto;
+  max-width: 5rem;
+  padding: 0.2rem;
+  gap: 0.1rem;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  justify-self: center;
+  align-self: center;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  transition: transform 0.2s;
+}
+.game-screen.dgame .d-seat .avatar {
+  width: 2.4rem;
+  height: 2.4rem;
+  border: 3px solid #fffefa;
+  transition:
+    transform 0.2s,
+    box-shadow 0.2s;
+}
+.game-screen.dgame .d-seat.active-player {
+  transform: scale(1.3);
+  z-index: 3;
+}
+.game-screen.dgame .d-seat.active-player .avatar {
+  border-color: #f2c94c;
+  box-shadow:
+    0 0 0 4px #f2c94caa,
+    0 0 1.2rem #f2c94c;
+}
+.game-screen.dgame .d-info {
+  align-items: center;
+}
+.game-screen.dgame .d-info strong {
+  max-width: 5rem;
+  font-size: 0.75rem;
+  color: #fff;
+}
+.game-screen.dgame .d-info small {
+  font-size: 0.65rem;
+  color: #ffffffcc;
+}
+.game-screen.dgame .d-seat.active-player .d-info strong {
+  color: #f2c94c;
+}
+.game-screen.dgame .d-backs {
+  display: none;
+}
+.seat-time {
+  display: none;
+  position: absolute;
+  top: -0.2rem;
+  right: 0.1rem;
+  min-width: 1.5rem;
+  padding: 0 0.3rem;
+  border-radius: 999px;
+  background: #f2c94c;
+  color: #233c34;
+  font-size: 0.8rem;
+  font-weight: 800;
+  line-height: 1.4rem;
+  text-align: center;
+}
+.d-seat.active-player .seat-time:not(:empty) {
+  display: block;
+}
+/* Mesa em várias fileiras, sem rolar para o lado: cresce na vertical */
+.game-screen.dgame .d-board-wrap .board {
+  flex-wrap: wrap;
+  align-content: center;
+  justify-content: center;
+  overflow-x: hidden;
+  overflow-y: auto;
+  gap: 0.35rem;
+  padding: 0.6rem;
+}
+.game-screen.dgame .d-board-wrap .board > :first-child,
+.game-screen.dgame .d-board-wrap .board > :last-child {
+  margin-inline: 0;
+}
+.game-screen.dgame .d-board-wrap {
+  align-items: stretch;
+}
+.game-screen.dgame .d-board-wrap .board {
+  height: 100%;
+}
+.game-screen.dgame .d-board-wrap .board .tile {
+  width: clamp(2.9rem, min(12vw, 8dvh), 6rem);
+}
+
+/* Todos os jogos de mesa: o jogador da vez cresce, fica amarelo e mostra os segundos */
+.truco-seat {
+  position: absolute;
+}
+.truco-seat.active-player {
+  z-index: 3;
+}
+.truco-screen .truco-felt .seat-top.active-player {
+  transform: translateX(-50%) scale(1.25);
+}
+.truco-screen .truco-felt .seat-left.active-player,
+.truco-screen .truco-felt .seat-right.active-player {
+  transform: translateY(-50%) scale(1.25);
+}
+.truco-screen .truco-felt .seat-me.active-player {
+  transform: translateX(-50%) scale(1.15);
+}
+.truco-seat .seat-time {
+  top: -0.1rem;
+  right: -0.2rem;
+}
+.truco-seat {
+  position: absolute;
+}
+.truco-seat .avatar {
+  position: relative;
+}
+/* Cacheta e outros: placar dos jogadores em círculos pequenos */
+.game-cacheta .additional-players {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.8rem;
+}
+.game-cacheta .additional-players .player-card {
+  position: relative;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.1rem;
+  padding: 0.3rem;
+  text-align: center;
+  background: transparent;
+  border: 0;
+  transition: transform 0.2s;
+}
+.game-cacheta .additional-players .avatar {
+  width: 2.6rem;
+  height: 2.6rem;
+  border: 3px solid #fffefa;
+}
+.game-cacheta .additional-players .player-card.active-player {
+  transform: scale(1.25);
+}
+.game-cacheta .additional-players .player-card.active-player .avatar {
+  border-color: #f2c94c;
+  box-shadow:
+    0 0 0 4px #f2c94caa,
+    0 0 1rem #f2c94c;
+}
+.game-cacheta .additional-players .player-card.active-player strong {
+  color: #f2c94c;
+}
+.game-cacheta .additional-players strong {
+  font-size: 0.8rem;
+}
+.game-cacheta .additional-players small {
+  font-size: 0.65rem;
+}
+.game-cacheta .additional-players .player-card .avatar {
+  display: inline-flex;
+}
+.game-cacheta .additional-players .player-card.active-player {
+  transform: none;
+}
+.game-cacheta .additional-players .player-card.active-player .avatar {
+  transform: scale(1.3);
+  margin: 0.25rem 0;
+}

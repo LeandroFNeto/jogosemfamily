@@ -181,7 +181,7 @@ function trucoMarkup(game, meId, connected, players, status, enabled, key) {
     if (!player) return '';
     const turn =
       game.currentPlayerId === player.id && game.status === 'PLAYING';
-    return `<div class="player-card truco-seat seat-${place}${turn ? ' active-player' : ''}">${avatar(player)}<strong>${e(player.name)}${botTag(player)}</strong></div>`;
+    return `<div class="player-card truco-seat seat-${place}${turn ? ' active-player' : ''}">${avatar(player)}<span class="seat-time" aria-hidden="true"></span><strong>${e(player.name)}${botTag(player)}</strong></div>`;
   };
   const meSeat = players.find((item) => item.id === meId);
   const myTurnNow = game.currentPlayerId === meId && game.status === 'PLAYING';
@@ -237,7 +237,7 @@ function trucoMarkup(game, meId, connected, players, status, enabled, key) {
         <h2 class="visually-hidden">${game.trick.length ? 'Vaza em andamento' : game.lastTrick.length ? 'Última vaza' : 'Escolha sua primeira carta'}</h2>
         <div class="truco-center" id="truco-drop"><div class="played-cards">${plays.map((play) => `<div class="at-${placeOf(play.playerId)}" data-motion="p-${play.card.id}"><span role="img" aria-label="${cardLabel(play.card)}">${cardMarkup(play.card)}</span><p>${nameOf(play.playerId)}</p></div>`).join('')}</div>${plays.length || !canPlay ? '' : '<span class="drop-hint" aria-hidden="true">Solte a carta aqui</span>'}</div>
         <div class="vira">Vira <span role="img" aria-label="${cardLabel(game.vira)}">${cardMarkup(game.vira)}</span><span>manilha ${rankName(manilhaRank(game.vira))}</span></div>
-        <div class="player-card truco-seat seat-me${myTurnNow ? ' active-player' : ''}">${avatar(meSeat)}<strong>${e(meSeat?.name)}${myTurnNow ? ' · sua vez' : ''}</strong></div>
+        <div class="player-card truco-seat seat-me${myTurnNow ? ' active-player' : ''}">${avatar(meSeat)}<span class="seat-time" aria-hidden="true"></span><strong>${e(meSeat?.name)}${myTurnNow ? ' · sua vez' : ''}</strong></div>
         ${overlay}
         ${turnSign(key, enabled && game.status === 'PLAYING')}
       </section>
@@ -522,7 +522,7 @@ export function renderAdditionalGame(context) {
           `${room.id}:${room.revision}`
         )
       : `<section class="game-page game-screen game-${room.gameId}">${screenBar({ title: e(metadata.name) })}${gameSheet({ connected, readId: 'read-game', readLabel: 'Ler instruções em voz alta', info: `<strong>${e(metadata.name)}</strong> · ${room.mode === 'bot' ? 'Contra bots' : 'Sem pressa'}` })}
-    <section class="players additional-players" aria-label="Participantes" ${room.gameId === 'cards' ? 'hidden' : ''}>${(room.gameId === 'cards' ? [] : players).map((player, i) => `<div class="player-card${actor === player.id && !finished ? ' active-player' : ''}">${avatar(player)}<div><strong>${e(player.name)}${player.id === me.id ? ' (você)' : ''}${botTag(player)}</strong><small>${room.gameId === 'cards' ? `Equipe ${i % 2 === 0 ? 'A' : 'B'} · ` : ''}${game.score[player.id].wins} vitória(s) · ${game.score[player.id].points} ponto(s)</small>${game.progress ? `<small>${game.progress[player.id]} de ${room.gameId === 'puzzle' ? (game.size ?? 3) ** 2 : game.words.length} encontrados</small>` : ''}</div></div>`).join('')}</section>
+    <section class="players additional-players" aria-label="Participantes" ${room.gameId === 'cards' ? 'hidden' : ''}>${(room.gameId === 'cards' ? [] : players).map((player, i) => `<div class="player-card${actor === player.id && !finished ? ' active-player' : ''}">${avatar(player)}<span class="seat-time" aria-hidden="true"></span><div><strong>${e(player.name)}${player.id === me.id ? ' (você)' : ''}${botTag(player)}</strong><small>${room.gameId === 'cards' ? `Equipe ${i % 2 === 0 ? 'A' : 'B'} · ` : ''}${game.score[player.id].wins} vitória(s) · ${game.score[player.id].points} ponto(s)</small>${game.progress ? `<small>${game.progress[player.id]} de ${room.gameId === 'puzzle' ? (game.size ?? 3) ** 2 : game.words.length} encontrados</small>` : ''}</div></div>`).join('')}</section>
     <div id="turn-status" tabindex="-1" class="turn-banner${enabled ? ' my-turn' : ''}" role="status" aria-live="polite"><strong>${e(status)}</strong><span>${room.mode === 'bot' ? 'Cada jogada sua dá uma vez ao bot.' : room.solo ? 'No seu ritmo, sem limite de tempo.' : 'Jogue com pessoas conhecidas, no tempo combinado.'}</span></div>
     ${content}
     ${finished ? endMarkup(room, game, status, me.id, connected) : ''}

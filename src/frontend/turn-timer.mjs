@@ -58,6 +58,9 @@ export function mountTurnTimer({ room, me, container, receivedAt }) {
     clock.style.setProperty('--shake', shake ? `${shake}s` : '0s');
     clock.classList.toggle('shaking', shake > 0 && left > 0);
     label.textContent = `${Math.ceil(left / 1000)} s`;
+    // Quem joga junto vê os segundos também no círculo do jogador da vez.
+    const seatTime = container.querySelector('.active-player .seat-time');
+    if (seatTime) seatTime.textContent = `${Math.ceil(left / 1000)}`;
     if (mine && left <= 10000 && left > 0 && announcedKey !== key) {
       announcedKey = key;
       announce.textContent = 'Faltam 10 segundos para a sua jogada.';
