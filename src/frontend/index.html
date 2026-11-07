@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#214e40" />
+    <meta
+      name="description"
+      content="Dominó, Truco, palavras cruzadas e quebra-cabeça para reunir a família. Jogue com calma ou desafie bots, sem instalar nada."
+    />
+    <title>Mesa em Família — Vamos jogar juntos?</title>
+    <link rel="icon" type="image/svg+xml" href="/icon.svg" />
+    <link rel="stylesheet" href="/styles.css" />
+    <script type="module" src="/app.mjs"></script>
+  </head>
+  <body>
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="0"
+      height="0"
+      class="art-sprite"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <defs>
+        <symbol id="s-hearts" viewBox="0 0 24 24">
+          <path
+            fill="currentColor"
+            d="M12 21.5C5 15.8 2 12.4 2 8.6 2 5.6 4.3 3.5 7 3.5c2 0 3.8 1.1 5 3 1.2-1.9 3-3 5-3 2.7 0 5 2.1 5 5.1 0 3.8-3 7.2-10 12.9z"
+          />
+        </symbol>
+        <symbol id="s-diamonds" viewBox="0 0 24 24">
+          <path fill="currentColor" d="M12 1.5 21 12 12 22.5 3 12z" />
+        </symbol>
+        <symbol id="s-clubs" viewBox="0 0 24 24">
+          <g fill="currentColor">
+            <circle cx="12" cy="7" r="4.6" />
+            <circle cx="6.4" cy="14" r="4.6" />
+            <circle cx="17.6" cy="14" r="4.6" />
+            <path d="M10.5 14h3l1.8 8.5H8.7z" />
+          </g>
+        </symbol>
+        <symbol id="s-spades" viewBox="0 0 24 24">
+          <path
+            fill="currentColor"
+            d="M12 1.5C6 8 3 11 3 14.6 3 17.4 5.1 19 7.4 19c1.7 0 3.1-.8 3.9-2.2l-.7 5.7h2.8l-.7-5.7c.8 1.4 2.2 2.2 3.9 2.2 2.3 0 4.4-1.6 4.4-4.4C21 11 18 8 12 1.5z"
+          />
+        </symbol>
+        <symbol id="s-joker" viewBox="0 0 24 24">
+          <path
+            fill="currentColor"
+            d="m12 1.8 2.9 6.6 7.1.7-5.4 4.7 1.6 7-6.2-3.7-6.2 3.7 1.6-7L2 9.1l7.1-.7z"
+          />
+        </symbol>
+        <symbol id="s-crown" viewBox="0 0 24 24">
+          <path
+            fill="currentColor"
+            d="M3 18 2 7l5 4 5-7 5 7 5-4-1 11zm0 2h18v2H3z"
+          />
+        </symbol>
+        <symbol id="s-tiara" viewBox="0 0 24 24">
+          <g fill="currentColor">
+            <circle cx="5" cy="12" r="2" />
+            <circle cx="12" cy="7" r="2.4" />
+            <circle cx="19" cy="12" r="2" />
+            <path d="M3 20c2-6 5-8 9-8s7 2 9 8z" />
+          </g>
+        </symbol>
+        <clipPath id="art-back-clip">
+          <rect x="8" y="8" width="84" height="124" rx="5" />
+        </clipPath>
+      </defs>
+    </svg>
+    <a class="skip-link" href="#main">Ir para o conteúdo</a>
+    <header class="topbar">
+      <a class="brand" href="/" aria-label="Mesa em Família, início"
+        ><span class="brand-mark" aria-hidden="true">⠿</span
+        ><span>mesa <small>em família</small></span></a
+      >
+      <nav aria-label="Opções">
+        <button id="help-button" class="quiet" type="button">Como jogar</button>
+        <button id="accessibility-button" class="quiet" type="button">
+          Aa <span>Acessibilidade</span>
+        </button>
+        <button id="family-button" class="quiet" type="button">
+          Painel do familiar
+        </button>
+      </nav>
+    </header>
+    <div
+      id="notice"
+      class="notice"
+      role="status"
+      aria-live="polite"
+      hidden
+    ></div>
+    <main id="main" tabindex="-1">
+      <p class="loading">Preparando a sua mesa…</p>
+    </main>
+    <footer class="footer">
+      <span>Feito para estar perto, mesmo de longe.</span
+      ><span>Sem anúncios. Sem pressa. Em família.</span>
+    </footer>
+    <dialog id="dialog" aria-labelledby="dialog-title"></dialog>
+  </body>
+</html>

@@ -1,0 +1,10 @@
+node_modules/
+data/
+dist/
+coverage/
+.env
+*.log
+test-results/
+playwright-report/
+backups/
+.claude/settings.local.json

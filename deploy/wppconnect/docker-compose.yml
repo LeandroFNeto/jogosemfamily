@@ -1,0 +1,30 @@
+# WPPConnect server usado pelo canal WhatsApp do Mesa em Família.
+# Contexto de build: o repositório oficial ou, se preferir, a pasta
+# wppconnect-server do projeto Tech-Saas-Micro_servico:
+#   WPPCONNECT_BUILD_CONTEXT=../../../Tech-Saas-Micro_servico/wppconnect-server
+services:
+  wppconnect:
+    build: ${WPPCONNECT_BUILD_CONTEXT:-https://github.com/wppconnect-team/wppconnect-server.git}
+    container_name: mesa_wppconnect
+    restart: always
+    environment:
+      PORT: 21465
+      SECRET_KEY: ${WPP_SECRET_KEY:?defina WPP_SECRET_KEY}
+      # O WPPConnect só entrega mensagens para URLs liberadas aqui: use exatamente
+      # <WHATSAPP_WEBHOOK_BASE>/webhook/whatsapp?secret=<WHATSAPP_WEBHOOK_SECRET>.
+      WEBHOOK_ALLOWED_URLS: ${WPP_WEBHOOK_URL:?defina WPP_WEBHOOK_URL}
+    # Publicado só em localhost: o jogo acessa por WPP_URL e ninguém mais deve alcançar a API.
+    ports:
+      - '127.0.0.1:21465:21465'
+    volumes:
+      - wpp_tokens:/usr/src/wpp-server/tokens
+      - wpp_browser:/usr/src/wpp-server/userDataDir
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: '3'
+
+volumes:
+  wpp_tokens:
+  wpp_browser:

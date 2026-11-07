@@ -1,0 +1,110 @@
+[
+  {
+    "id": "por-do-sol",
+    "title": "Pôr do sol na colina",
+    "category": "paisagem",
+    "difficulty": "easy",
+    "file": "por-do-sol.svg",
+    "license": "CC0 1.0",
+    "attribution": "Mesa em Família (obra original)"
+  },
+  {
+    "id": "casa-no-campo",
+    "title": "Casa no campo",
+    "category": "paisagem",
+    "difficulty": "easy",
+    "file": "casa-no-campo.svg",
+    "license": "CC0 1.0",
+    "attribution": "Mesa em Família (obra original)"
+  },
+  {
+    "id": "barco-no-mar",
+    "title": "Barco no mar",
+    "category": "mar",
+    "difficulty": "easy",
+    "file": "barco-no-mar.svg",
+    "license": "CC0 1.0",
+    "attribution": "Mesa em Família (obra original)"
+  },
+  {
+    "id": "jardim-de-flores",
+    "title": "Jardim de flores",
+    "category": "natureza",
+    "difficulty": "easy",
+    "file": "jardim-de-flores.svg",
+    "license": "CC0 1.0",
+    "attribution": "Mesa em Família (obra original)"
+  },
+  {
+    "id": "cidade-a-noite",
+    "title": "Cidade à noite",
+    "category": "cidade",
+    "difficulty": "medium",
+    "file": "cidade-a-noite.svg",
+    "license": "CC0 1.0",
+    "attribution": "Mesa em Família (obra original)"
+  },
+  {
+    "id": "floresta-de-pinheiros",
+    "title": "Floresta de pinheiros",
+    "category": "natureza",
+    "difficulty": "medium",
+    "file": "floresta-de-pinheiros.svg",
+    "license": "CC0 1.0",
+    "attribution": "Mesa em Família (obra original)"
+  },
+  {
+    "id": "peixes-coloridos",
+    "title": "Peixes coloridos",
+    "category": "mar",
+    "difficulty": "medium",
+    "file": "peixes-coloridos.svg",
+    "license": "CC0 1.0",
+    "attribution": "Mesa em Família (obra original)"
+  },
+  {
+    "id": "baloes-no-ceu",
+    "title": "Balões no céu",
+    "category": "céu",
+    "difficulty": "medium",
+    "file": "baloes-no-ceu.svg",
+    "license": "CC0 1.0",
+    "attribution": "Mesa em Família (obra original)"
+  },
+  {
+    "id": "mandala",
+    "title": "Mandala de pétalas",
+    "category": "padrão",
+    "difficulty": "hard",
+    "file": "mandala.svg",
+    "license": "CC0 1.0",
+    "attribution": "Mesa em Família (obra original)"
+  },
+  {
+    "id": "mosaico-de-azulejos",
+    "title": "Mosaico de azulejos",
+    "category": "padrão",
+    "difficulty": "hard",
+    "file": "mosaico-de-azulejos.svg",
+    "license": "CC0 1.0",
+    "attribution": "Mesa em Família (obra original)"
+  },
+  {
+    "id": "triangulos",
+    "title": "Triângulos em degradê",
+    "category": "padrão",
+    "difficulty": "hard",
+    "file": "triangulos.svg",
+    "license": "CC0 1.0",
+    "attribution": "Mesa em Família (obra original)"
+  },
+  {
+    "id": "constelacoes",
+    "title": "Constelações",
+    "category": "céu",
+    "difficulty": "hard",
+    "file": "constelacoes.svg",
+    "license": "CC0 1.0",
+    "attribution": "Mesa em Família (obra original)"
+  }
+]

@@ -1,0 +1,86 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 560" width="720" height="560" role="img" aria-label="Menu de jogos: 1 Dominó, 2 Truco paulista, 3 Palavras cruzadas, 4 Quebra-cabeça, 5 Cacheta, 6 Caça-palavras" font-family="'Segoe UI',Arial,sans-serif">
+  <rect width="720" height="560" fill="#f8f6f0"/>
+  <text x="360" y="64" text-anchor="middle" font-size="44" font-weight="800" fill="#214e40" font-family="Georgia,serif">Jogos em Família</text>
+  <text x="360" y="104" text-anchor="middle" font-size="24" font-weight="600" fill="#58675e">Responda com o número do jogo</text>
+
+  <!-- 1 Dominó -->
+  <g transform="translate(24 132)">
+    <rect width="324" height="124" rx="20" fill="#2f6b4f"/>
+    <text x="24" y="76" font-size="58" font-weight="800" fill="#fff">1</text>
+    <text x="78" y="72" font-size="30" font-weight="700" fill="#fff">Dominó</text>
+    <g transform="translate(206 24)">
+      <rect width="92" height="46" rx="8" fill="#fffefa"/><path d="M46 6v34" stroke="#9aa08c" stroke-width="2"/>
+      <g fill="#1b9aaa"><circle cx="23" cy="23" r="5"/></g><g fill="#d9453b"><circle cx="30" cy="15" r="5"/><circle cx="62" cy="15" r="5"/><circle cx="62" cy="31" r="5"/><circle cx="78" cy="23" r="5"/><circle cx="78" cy="9" r="0"/></g>
+      <rect x="30" y="56" width="62" height="34" rx="7" fill="#fffefa" transform="rotate(0)"/><path d="M61 60v26" stroke="#9aa08c" stroke-width="2"/>
+      <g fill="#2e9e4f"><circle cx="46" cy="73" r="4.5"/></g><g fill="#f08a24"><circle cx="76" cy="66" r="4.5"/><circle cx="76" cy="80" r="4.5"/></g>
+    </g>
+  </g>
+
+  <!-- 2 Truco -->
+  <g transform="translate(372 132)">
+    <rect width="324" height="124" rx="20" fill="#214e40"/>
+    <text x="24" y="76" font-size="58" font-weight="800" fill="#fff">2</text>
+    <text x="78" y="62" font-size="30" font-weight="700" fill="#fff">Truco</text>
+    <text x="78" y="96" font-size="30" font-weight="700" fill="#fff">paulista</text>
+    <g transform="translate(222 18)">
+      <rect x="0" y="12" width="46" height="66" rx="7" fill="#fffefa" transform="rotate(-12 23 45)"/>
+      <rect x="30" y="8" width="46" height="66" rx="7" fill="#fffefa" transform="rotate(10 53 41)"/>
+      <path d="M53 26c-9 10-14 15-14 21 0 5 4 8 8 8 3 0 5-1 6-4l-1 9h8l-1-9c1 3 3 4 6 4 4 0 8-3 8-8 0-6-5-11-14-21z" fill="#233c34" transform="translate(-10 -4) scale(.9)"/>
+    </g>
+  </g>
+
+  <!-- 3 Palavras cruzadas -->
+  <g transform="translate(24 272)">
+    <rect width="324" height="124" rx="20" fill="#2f6b4f"/>
+    <text x="24" y="76" font-size="58" font-weight="800" fill="#fff">3</text>
+    <text x="78" y="62" font-size="27" font-weight="700" fill="#fff">Palavras</text>
+    <text x="78" y="94" font-size="27" font-weight="700" fill="#fff">cruzadas</text>
+    <g transform="translate(224 22)" fill="#fffefa">
+      <rect x="0" y="32" width="24" height="24" rx="3"/><rect x="26" y="32" width="24" height="24" rx="3"/><rect x="52" y="32" width="24" height="24" rx="3"/>
+      <rect x="26" y="6" width="24" height="24" rx="3"/><rect x="26" y="58" width="24" height="24" rx="3"/>
+      <text x="38" y="50" font-size="16" font-weight="700" fill="#233c34" text-anchor="middle">A</text>
+    </g>
+  </g>
+
+  <!-- 4 Quebra-cabeça -->
+  <g transform="translate(372 272)">
+    <rect width="324" height="124" rx="20" fill="#214e40"/>
+    <text x="24" y="76" font-size="58" font-weight="800" fill="#fff">4</text>
+    <text x="78" y="62" font-size="27" font-weight="700" fill="#fff">Quebra-</text>
+    <text x="78" y="94" font-size="27" font-weight="700" fill="#fff">cabeça</text>
+    <g transform="translate(226 20)">
+      <path d="M0 4h34a8 8 0 1 1 14 0h14v30a8 8 0 1 0 0 14v18H0z" fill="#f2c94c" transform="scale(.8)"/>
+      <path d="M52 0h40v36H70a8 8 0 1 1 0 0H52z" fill="#d9453b" transform="translate(6 0) scale(.85)"/>
+      <path d="M0 52h36v34H0z" fill="#3f7fd0" transform="translate(0 6)"/>
+      <path d="M44 56h40v34H44z" fill="#43a047" transform="translate(10 2) scale(.9)"/>
+    </g>
+  </g>
+
+  <!-- 5 Cacheta -->
+  <g transform="translate(24 412)">
+    <rect width="324" height="124" rx="20" fill="#2f6b4f"/>
+    <text x="24" y="76" font-size="58" font-weight="800" fill="#fff">5</text>
+    <text x="78" y="72" font-size="30" font-weight="700" fill="#fff">Cacheta</text>
+    <g transform="translate(218 18)">
+      <rect x="0" y="12" width="46" height="66" rx="7" fill="#fffefa" transform="rotate(-12 23 45)"/>
+      <rect x="30" y="8" width="46" height="66" rx="7" fill="#fffefa" transform="rotate(10 53 41)"/>
+      <path d="M55 52c-10-7-12-11-12-15 0-4 3-6 6-6 3 0 5 1 6 4 1-3 3-4 6-4 3 0 6 2 6 6 0 4-2 8-12 15z" fill="#d9453b"/>
+    </g>
+  </g>
+
+  <!-- 6 Caça-palavras -->
+  <g transform="translate(372 412)">
+    <rect width="324" height="124" rx="20" fill="#214e40"/>
+    <text x="24" y="76" font-size="58" font-weight="800" fill="#fff">6</text>
+    <text x="78" y="62" font-size="27" font-weight="700" fill="#fff">Caça-</text>
+    <text x="78" y="94" font-size="27" font-weight="700" fill="#fff">palavras</text>
+    <g transform="translate(222 20)" font-size="15" font-weight="700" text-anchor="middle" fill="#233c34">
+      <rect width="84" height="84" rx="6" fill="#fffefa"/>
+      <path d="M0 28h84M0 56h84M28 0v84M56 0v84" stroke="#c9ccbd" stroke-width="1.5"/>
+      <text x="14" y="20">C</text><text x="42" y="20">A</text><text x="70" y="20">Ç</text>
+      <text x="14" y="48">A</text><text x="42" y="48">S</text><text x="70" y="48">A</text>
+      <text x="14" y="76">L</text><text x="42" y="76">A</text><text x="70" y="76">!</text>
+      <rect x="4" y="32" width="76" height="20" rx="10" fill="none" stroke="#d9453b" stroke-width="3"/>
+    </g>
+  </g>
+</svg>

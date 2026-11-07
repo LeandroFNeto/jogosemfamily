@@ -1,0 +1,26 @@
+{
+  "name": "mesa-em-familia",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Dominó, Truco, palavras cruzadas e quebra-cabeça acessíveis, em família ou contra bots.",
+  "engines": {
+    "node": ">=24.14.0"
+  },
+  "scripts": {
+    "start": "node --env-file-if-exists=.env src/backend/server.mjs",
+    "wpp:up": "powershell -ExecutionPolicy Bypass -File scripts/wpp-restart.ps1",
+    "dev": "node --watch --env-file-if-exists=.env src/backend/server.mjs",
+    "check": "node scripts/project.mjs check",
+    "build": "node scripts/project.mjs build",
+    "test": "node --test src/tests/*.test.mjs",
+    "test:bots": "node --test src/tests/bots/*.test.mjs",
+    "test:e2e": "playwright test",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.65.0",
+    "prettier": "^3.9.10"
+  }
+}

@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 600" role="img" aria-labelledby="title">
+  <title id="title">Casa acolhedora com jardim, árvore e sol</title>
+  <rect width="600" height="600" fill="#b9deeb"/>
+  <circle cx="490" cy="90" r="48" fill="#f7c65a"/>
+  <g fill="#fffaf0"><ellipse cx="130" cy="95" rx="85" ry="28"/><ellipse cx="173" cy="73" rx="43" ry="31"/><ellipse cx="340" cy="155" rx="68" ry="23"/></g>
+  <path d="M0 380Q140 290 300 375T600 340V600H0Z" fill="#91b66f"/>
+  <path d="M0 475Q220 415 600 470V600H0Z" fill="#6d9653"/>
+  <rect x="180" y="267" width="270" height="208" rx="5" fill="#fff0c9"/>
+  <path d="m155 280 160-130 160 130Z" fill="#ab5840"/>
+  <rect x="383" y="165" width="29" height="60" fill="#864b38"/>
+  <rect x="285" y="355" width="63" height="120" rx="28" fill="#4a786c"/>
+  <circle cx="333" cy="415" r="5" fill="#f7c65a"/>
+  <g fill="#93c5d1" stroke="#5a7e76" stroke-width="7"><rect x="207" y="320" width="52" height="58" rx="3"/><rect x="374" y="320" width="52" height="58" rx="3"/></g>
+  <g stroke="#fff0c9" stroke-width="5"><path d="M233 320v58m-26-29h52m141-29v58m-26-29h52"/></g>
+  <path d="M295 475 245 600h155l-55-125Z" fill="#dec7a0"/>
+  <path d="M85 280v220" stroke="#77543b" stroke-width="25"/>
+  <g fill="#477c4d"><circle cx="84" cy="240" r="66"/><circle cx="45" cy="290" r="52"/><circle cx="120" cy="292" r="54"/></g>
+  <g fill="#db6e4c"><circle cx="67" cy="229" r="9"/><circle cx="112" cy="279" r="9"/><circle cx="42" cy="296" r="9"/></g>
+  <g stroke="#f9edcf" stroke-width="10"><path d="M450 469h150m-135-30v75m47-75v75m47-75v75"/></g>
+  <g stroke="#355d3b" stroke-width="5"><path d="M60 558v-35m60 56v-37m350 25v-40m65 58v-36"/></g>
+  <g fill="#f3c34e"><circle cx="60" cy="519" r="13"/><circle cx="470" cy="524" r="14"/></g>
+  <g fill="#e8999d"><circle cx="120" cy="539" r="14"/><circle cx="535" cy="547" r="13"/></g>
+</svg>
