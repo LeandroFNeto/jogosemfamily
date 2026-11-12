@@ -16,20 +16,19 @@ const ASSETS_DIR = join(
   dirname(fileURLToPath(import.meta.url)),
   '../whatsapp/assets'
 );
-// Imagens que o bot pode enviar; só estes nomes são aceitos (nada de caminhos livres).
-const ASSETS = {
-  'menu-jogos': { file: 'menu-jogos.png', type: 'image/png' },
-};
+// Imagens do bot (menu de jogos e decisões): só nomes simples, que viram um PNG
+// da pasta de assets (nada de caminhos livres). Arquivo ausente cai no texto.
+const ASSET_NAME = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const assetCache = new Map();
 function loadAsset(name) {
-  const asset = ASSETS[name];
-  if (!asset) throw new Error('Imagem desconhecida.');
+  if (!ASSET_NAME.test(String(name))) throw new Error('Imagem desconhecida.');
+  const file = `${name}.png`;
   if (!assetCache.has(name))
     assetCache.set(
       name,
-      `data:${asset.type};base64,${readFileSync(join(ASSETS_DIR, asset.file)).toString('base64')}`
+      `data:image/png;base64,${readFileSync(join(ASSETS_DIR, file)).toString('base64')}`
     );
-  return { base64: assetCache.get(name), filename: asset.file };
+  return { base64: assetCache.get(name), filename: file };
 }
 
 export function createWppProvider({

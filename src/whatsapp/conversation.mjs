@@ -2,6 +2,7 @@ import { AppError, requireValue } from '../shared/errors.mjs';
 import { gameCatalog, enabledGameIds } from '../shared/games.mjs';
 import { issueWhatsappInvitation } from '../invitations/service.mjs';
 import { hasWebLink, issueWebLink } from '../invitations/web-links.mjs';
+import { embeddedImageIds } from './menu-art.mjs';
 
 import { DECLINE_WAIT, MAX_RECIPIENTS } from '../backend/favorites.mjs';
 
@@ -204,6 +205,27 @@ export function createConversation({
       kind: 'image',
       asset: 'menu-jogos',
       caption: join(intro, menuCaption(profile)),
+    });
+  }
+
+  // Toda decisão com opções numeradas vai como imagem (como o menu de jogos);
+  // se a imagem falhar, o texto numerado a substitui.
+  function askChoice(profile, asset, question, labels) {
+    send(profile.id, `${question}\n${numbered(labels)}`, {
+      kind: 'image',
+      asset,
+      caption: `${question}\nResponda com o *número* da imagem.`,
+    });
+  }
+
+  // Sim ou não por botões; sem botões, a pessoa responde *SIM* ou *NÃO* em texto.
+  function askYesNo(profile, question) {
+    send(profile.id, `${question} Responda *SIM* ou *NÃO*.`, {
+      kind: 'buttons',
+      buttons: [
+        { id: 'sim', text: 'Sim' },
+        { id: 'nao', text: 'Não' },
+      ],
     });
   }
 
@@ -439,9 +461,11 @@ Digite *revanche* para jogar de novo ou *menu* para outro jogo.`;
       ? ['Em grupo (eu gero um link para convidar)', 'Sozinho(a)']
       : ['Com amigos (bots entram se faltar gente)', 'Contra bots'];
     persist(profile, { state: 'PICK_MODE', draft: { gameId } });
-    send(
-      profile.id,
-      `*${game.name}* — como você quer jogar?\n${numbered(labels)}\n\nDigite *menu* para voltar.`
+    askChoice(
+      profile,
+      game.solo ? 'modo-grupo' : 'modo-mesa',
+      `*${game.name}* — como você quer jogar?`,
+      labels
     );
   }
 
@@ -735,17 +759,20 @@ Digite *revanche* para jogar de novo ou *menu* para outro jogo.`;
       const next = { ...draft, mode: modes[choice - 1] };
       if (draft.gameId === 'puzzle') {
         persist(profile, { state: 'PICK_LEVEL', draft: next });
-        return send(
-          profile.id,
-          `Qual a dificuldade do quebra-cabeça?
-${numbered(LEVELS.map((level) => level.label))}`
+        return askChoice(
+          profile,
+          'nivel-quebra-cabeca',
+          'Qual a dificuldade do quebra-cabeça?',
+          LEVELS.map((level) => level.label)
         );
       }
       if (draft.gameId === 'wordsearch') {
         persist(profile, { state: 'PICK_WORD_LEVEL', draft: next });
-        return send(
-          profile.id,
-          `Qual a dificuldade do caça-palavras?\n${numbered(WORDSEARCH_LEVELS.map((level) => level.label))}`
+        return askChoice(
+          profile,
+          'nivel-caca-palavras',
+          'Qual a dificuldade do caça-palavras?',
+          WORDSEARCH_LEVELS.map((level) => level.label)
         );
       }
       const sized = gameCatalog.find((item) => item.id === draft.gameId);
@@ -753,10 +780,13 @@ ${numbered(LEVELS.map((level) => level.label))}`
         return afterSeats(profile, { ...next, capacity: sized.capacities[0] });
       if (sized.capacities && next.mode !== 'solo') {
         persist(profile, { state: 'PICK_SEATS', draft: next });
-        return send(
-          profile.id,
-          `Quantos lugares na mesa de ${sized.shortName}?\n${numbered(seatOptions(draft.gameId).map((seat) => seat.label))}`
-        );
+        const options = seatOptions(draft.gameId);
+        const question = `Quantos lugares na mesa de ${sized.shortName}?`;
+        const labels = options.map((seat) => seat.label);
+        // A imagem mostra 2, 3 e 4 jogadores; outras combinações ficam em texto.
+        if (options.map((seat) => seat.capacity).join() === '2,3,4')
+          return askChoice(profile, 'lugares', question, labels);
+        return send(profile.id, `${question}\n${numbered(labels)}`);
       }
       return createAndAnnounce(profile, next);
     }
@@ -791,10 +821,21 @@ ${numbered(LEVELS.map((level) => level.label))}`
         draft: { ...draft, level },
         imageIds: images.map((image) => image.id),
       });
+      const question = 'Qual imagem?';
+      const labels = [
+        'Sortear uma imagem',
+        ...images.map((image) => image.title),
+      ];
+      // A folha mostra as imagens do acervo embutido; se a lista mudou, só texto.
+      if (
+        images.map((image) => image.id).join() ===
+        embeddedImageIds(level).join()
+      )
+        return askChoice(profile, `imagens-${level}`, question, labels);
       return send(
         profile.id,
-        `Qual imagem?
-${numbered(['Sortear uma imagem', ...images.map((image) => image.title)])}`
+        `${question}
+${numbered(labels)}`
       );
     }
     if (convo.state === 'PICK_IMAGE') {
@@ -829,9 +870,9 @@ ${numbered(['Sortear uma imagem', ...images.map((image) => image.title)])}`
         'Não entendi. Responda com o número da pessoa, ou digite *estado* para cancelar.'
       );
       persist(profile, { ...convo, state: 'CONFIRM_REMOVE', targetId: target });
-      return send(
-        profile.id,
-        `Retirar *${store.getProfile(target).name}* da mesa? Um bot assume o lugar. Responda *SIM* ou *NÃO*.`
+      return askYesNo(
+        profile,
+        `Retirar *${store.getProfile(target).name}* da mesa? Um bot assume o lugar.`
       );
     }
     if (convo.state === 'CONFIRM_REMOVE') {
@@ -1029,9 +1070,9 @@ ${numbered(['Sortear uma imagem', ...images.map((image) => image.title)])}`
           'Você não está em nenhuma mesa. Digite *menu* para jogar.'
         );
       persist(profile, { ...convo, state: 'CONFIRM_LEAVE' });
-      return send(
-        profile.id,
-        'Sair da mesa? Um bot assume o seu lugar e você volta com *jogo*. Responda *SIM* ou *NÃO*.'
+      return askYesNo(
+        profile,
+        'Sair da mesa? Um bot assume o seu lugar e você volta com *jogo*.'
       );
     }
     if (text === 'encerrar' || text === 'retirar') {
@@ -1050,10 +1091,7 @@ ${numbered(['Sortear uma imagem', ...images.map((image) => image.title)])}`
       );
       if (text === 'encerrar') {
         persist(profile, { ...convo, state: 'CONFIRM_CLOSE' });
-        return send(
-          profile.id,
-          'Encerrar a mesa para todos? Responda *SIM* ou *NÃO*.'
-        );
+        return askYesNo(profile, 'Encerrar a mesa para todos?');
       }
       const removable = room.playerIds.filter(
         (id) => id !== profile.id && !room.botIds.includes(id)

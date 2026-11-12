@@ -12,6 +12,7 @@
 - Quebra-cabeça de nove partes por troca de posições, imagem de referência, números de ajuda e opção de usar a foto do perfil.
 - Bots de um nível único no dominó (2 a 4 jogadores), no Truco e na Cacheta, executados pelo servidor. Eles completam sozinhos mesas que esperam amigos por mais de 3 minutos (ou quando o dono pede) e assumem o lugar de quem sai; aparecem com a marca 🤖 bot. Palavras cruzadas, quebra-cabeça e caça-palavras não têm bots.
 - Menu do WhatsApp: uma imagem (`src/whatsapp/assets/menu-jogos.png`), com resposta pelo número (1 a 6, fixo) ou pelo nome do jogo; se a imagem falhar, o bot manda o mesmo menu em texto.
+- Decisões do WhatsApp em imagem: modo de jogo, lugares na mesa, dificuldade (quebra-cabeça e caça-palavras) e escolha da imagem do quebra-cabeça seguem o mesmo padrão do menu (imagem numerada, resposta pelo número, texto como reserva); confirmar sair, encerrar e retirar usa botões Sim/Não. As imagens saem de `src/whatsapp/menu-art.mjs` por `node scripts/build-menu-image.mjs`.
 - Permissões individuais para os quatro jogos no painel do familiar e leitura de perfis/mesas antigos.
 - Sincronização SSE com reconexão, presença e estado privado de cada jogador, usando o servidor como fonte de verdade.
 - Três tamanhos de fonte, alto contraste, foco visível, controles amplos, operação por teclado e leitura opcional.
